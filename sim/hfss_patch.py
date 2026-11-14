@@ -235,6 +235,11 @@ def solve(hfss, a, ports):
         # ideal hybrid: equal power, J2 lags J1 by 90 deg -> RHCP
         hfss.edit_sources({"P1:1": ("1W", "0deg"), "P2:1": ("1W", "-90deg")})
     ok = hfss.analyze_setup("Setup1", cores=a.cores)
+    try:  # AEDT's own warnings and errors for this design, so a failed solve explains itself in the log
+        for msg in hfss.odesktop.GetMessages(hfss.project_name, hfss.design_name, 1):
+            print("AEDT:", str(msg).strip())
+    except Exception as e:
+        print("could not read AEDT messages:", e)
     if not ok:
         raise RuntimeError("HFSS solve failed (see the AEDT message log)")
 

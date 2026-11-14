@@ -28,6 +28,7 @@ RUNS = [
     ("T3", "B_L37.52_f7.00_c3.50_er2.55_h1.52_Gm100_mask", f"{BEST} --mask --tag mask"),
     ("T3", "B_L37.52_f7.00_c3.50_er2.55_h1.52_Gm100_box", f"{BEST} --box --tag box"),
     ("T2", "B_L37.52_f7.00_c3.50_er2.55_h1.52_Gm100_fine", f"{BEST} --delta-s 0.005 --tag fine"),
+    ("T2", "B_L37.52_f7.00_c3.50_er2.55_h1.52_Gm100_vfine", f"{BEST} --delta-s 0.002 --passes 30 --tag vfine"),
     ("T2", "B_L37.52_f7.00_c3.50_er2.52_h1.52_Gm100", f"{BEST_NO_ER} --er 2.52"),
     ("T2", "B_L37.52_f7.00_c3.50_er2.58_h1.52_Gm100", f"{BEST_NO_ER} --er 2.58"),
     ("T2", "B_L37.22_f7.00_c3.50_er2.55_h1.52_Gm100", f"--board B --L 37.22 --feed 7.00 --cut 3.50 {PTFE} --Gm 100"),
@@ -75,7 +76,7 @@ def main():
     ap.add_argument("--only", nargs="*", help="test groups (T0..T5) or folder names")
     ap.add_argument("--extra", default="", help="extra hfss_patch.py arguments for every run")
     ap.add_argument("--commit", action="store_true", help="git add + commit each result")
-    ap.add_argument("--timeout", type=float, default=90, help="minutes per attempt")
+    ap.add_argument("--timeout", type=float, default=25, help="minutes per attempt")
     a = ap.parse_args()
 
     out = os.path.join(HERE, "results_hfss")
@@ -104,6 +105,7 @@ def main():
                 break
             print(f"   failed ({rc}); see {log}", flush=True)
             kill_aedt()
+            time.sleep(60)   # give a transient system problem time to clear
         if not done:
             with open(os.path.join(out, "_failed.txt"), "a") as fh:
                 fh.write(f"{name}: failed three times ({args})\n")
