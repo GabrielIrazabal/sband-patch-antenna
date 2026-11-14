@@ -49,9 +49,23 @@ RUNS = [
 ]
 
 
+def aedt_pids():
+    out = subprocess.run(["tasklist", "/FO", "CSV", "/NH"], capture_output=True, text=True).stdout
+    pids = set()
+    for ln in out.splitlines():
+        cols = [c.strip('"') for c in ln.split('","')]
+        if len(cols) > 1 and cols[0].lower() in ("ansysedtsv.exe", "ansysedt.exe", "hf3d.exe"):
+            pids.add(cols[1])
+    return pids
+
+
+KEEP = aedt_pids()   # AEDT windows that were already open (the user's own): never touch these
+
+
 def kill_aedt():
-    for exe in ("ansysedtsv.exe", "ansysedt.exe", "hf3d.exe"):
-        subprocess.run(["taskkill", "/F", "/IM", exe], capture_output=True)
+    """After a failed run, stop the AEDT processes this batch started."""
+    for pid in aedt_pids() - KEEP:
+        subprocess.run(["taskkill", "/F", "/PID", pid], capture_output=True)
     time.sleep(5)
 
 
