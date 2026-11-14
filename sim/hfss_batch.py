@@ -19,6 +19,10 @@ PTFE = "--er 2.55 --tand 0.0018"
 BEST = f"--board B --L 37.52 --feed 7.00 --cut 3.50 {PTFE} --Gm 100"
 BEST_NO_ER = "--board B --L 37.52 --feed 7.00 --cut 3.50 --tand 0.0018 --Gm 100"
 
+# board A on PTFE, re-tuned in HFSS for the 100 mm face (run the TA group with --mesh 40000)
+A_BEST = f"--board A --L 37.28 --feed 5.80 {PTFE} --Gm 100"
+A_BEST_NO_ER = "--board A --L 37.28 --feed 5.80 --tand 0.0018 --Gm 100"
+
 # (group, results folder name, hfss_patch.py arguments)
 RUNS = [
     ("T0", "plain_L31.40_f5.80_er3.66_h1.52", "--board plain"),
@@ -47,6 +51,15 @@ RUNS = [
     ("T5", "plain_L30.66_f5.70_er3.66_h3.05_Gm100", "--board plain --h 3.048 --L 30.66 --feed 5.70 --Gm 100"),
     ("T5", "plain_L36.44_f6.70_er2.55_h3.05", f"--board plain --h 3.048 --L 36.44 --feed 6.70 {PTFE}"),
     ("T5", "plain_L36.44_f6.70_er2.55_h3.05_Gm100", f"--board plain --h 3.048 --L 36.44 --feed 6.70 {PTFE} --Gm 100"),
+    ("TA", "A_L37.28_f5.80_er2.55_h1.52_Gm100", A_BEST),
+    ("TA", "A_L37.28_f5.80_er2.52_h1.52_Gm100", f"{A_BEST_NO_ER} --er 2.52"),
+    ("TA", "A_L37.28_f5.80_er2.58_h1.52_Gm100", f"{A_BEST_NO_ER} --er 2.58"),
+    ("TA", "A_L36.98_f5.80_er2.55_h1.52_Gm100", f"--board A --L 36.98 --feed 5.80 {PTFE} --Gm 100"),
+    ("TA", "A_L37.58_f5.80_er2.55_h1.52_Gm100", f"--board A --L 37.58 --feed 5.80 {PTFE} --Gm 100"),
+    ("TA", "A_L37.28_f5.80_er2.55_h1.52_Gm100_sma", f"{A_BEST} --sma --tag sma"),
+    ("TA", "A_L37.28_f5.80_er2.55_h1.52_Gm100_mask", f"{A_BEST} --mask --tag mask"),
+    ("TA", "A_L37.28_f5.80_er2.55_h1.52_Gm100_box", f"{A_BEST} --box --tag box"),
+    ("TA", "A_L37.28_f5.80_er2.55_h1.52_Gm100_pec", f"{A_BEST} --pec --tag pec"),
 ]
 
 

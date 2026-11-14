@@ -1,0 +1,91 @@
+{
+ "design": "A_L37.34_f6.40_er2.55_h1.52_Gm100_mesh40k",
+ "s11_min_dB": -16.28,
+ "s11_min_freq_GHz": 2.423,
+ "s11_worst_in_band_dB": -11.73,
+ "s11_10dB_band_MHz": 31.9,
+ "s11_10dB_band_edges_GHz": [
+  2.4072,
+  2.4392
+ ],
+ "axial_ratio_min_dB": 0.13,
+ "axial_ratio_min_freq_GHz": 2.4175,
+ "axial_ratio_at_f0_dB": 0.14,
+ "axial_ratio_worst_in_band_dB": 0.15,
+ "axial_ratio_3dB_band_MHz": null,
+ "rhcp_gain_at_f0_dBic": 7.25,
+ "rhcp_gain_min_in_band_dBic": 7.07,
+ "rhcp_gain_max_in_band_dBic": 7.25,
+ "realized_gain_total_at_f0_dBi": 7.25,
+ "realized_gain_total_max_dBi": 7.25,
+ "directivity_at_f0_dBi": 7.97,
+ "radiation_efficiency_at_f0": 0.868,
+ "hpbw_deg_phi0_phi90": [
+  72.5,
+  72.7
+ ],
+ "rhcp_minus_lhcp_at_f0_dB": 42.1,
+ "hand": "RHCP",
+ "solve_minutes": 6.1,
+ "options": {
+  "board": "A",
+  "f0": 2.425,
+  "bw": 20.0,
+  "L": 37.34,
+  "feed": 6.4,
+  "cut": 3.13,
+  "h": 1.524,
+  "G": 60.0,
+  "Gm": 100.0,
+  "er": 2.55,
+  "tand": 0.0018,
+  "r_pin": 0.25,
+  "r_clear": 0.8,
+  "version": null,
+  "graphical": false,
+  "cores": 4,
+  "pec": false,
+  "delta_s": 0.01,
+  "passes": 20,
+  "target_tets": 40000,
+  "pad": 0.0,
+  "sma": false,
+  "mask": false,
+  "box": false,
+  "box_depth": 100.0,
+  "tag": ""
+ },
+ "isolation_s21_at_f0_dB": -42.0,
+ "active_s11_worst_in_band_dB": -11.43,
+ "z_in_at_f0_ohm": [
+  58.9,
+  -14.8
+ ],
+ "z_in_at_s11_min_ohm": [
+  63.1,
+  -11.6
+ ],
+ "hybrid_imbalance": [
+  {
+   "amplitude_dB": 0.5,
+   "phase_deg": 3.0,
+   "axial_ratio_worst_in_band_dB": 0.81,
+   "rhcp_gain_min_in_band_dBic": 7.06
+  },
+  {
+   "amplitude_dB": 1.0,
+   "phase_deg": 5.0,
+   "axial_ratio_worst_in_band_dB": 1.39,
+   "rhcp_gain_min_in_band_dBic": 7.04
+  },
+  {
+   "amplitude_dB": 1.0,
+   "phase_deg": 10.0,
+   "axial_ratio_worst_in_band_dB": 1.93,
+   "rhcp_gain_min_in_band_dBic": 7.02
+  }
+ ],
+ "adaptive_passes": 17,
+ "tetrahedra": 49781,
+ "final_delta_s": 0.017579
+}

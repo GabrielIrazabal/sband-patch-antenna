@@ -70,6 +70,8 @@ SMA_R_OUT = SMA_R_IN * math.exp(50.0 * math.sqrt(SMA_ER) / 59.96)
 SMA_LEN = 5.0
 # --mask: typical LPI solder mask
 MASK_T, MASK_ER, MASK_TAND = 0.025, 3.8, 0.025
+# board A: how far a real 90 degree hybrid plus its two cables may be off (amplitude dB, phase degrees)
+HYBRID_CASES = [(0.5, 3.0), (1.0, 5.0), (1.0, 10.0)]
 
 
 def parse():
@@ -427,6 +429,42 @@ def report(hfss, a, ports, out_dir, elapsed):
             act = rows[match_expr][1]
             summ["active_s11_worst_in_band_dB"] = round(
                 max(s for fq, s in zip(fs, act) if lo - eps <= fq <= hi + eps), 2)
+    try:  # input impedance at port 1 (for tuning the feed position)
+        zs = hfss.post.get_solution_data(expressions=["re(Z(P1,P1))", "im(Z(P1,P1))"],
+                                         setup_sweep_name="Setup1 : S")
+        zr, zx = series(zs, "re(Z(P1,P1))")[1], series(zs, "im(Z(P1,P1))")[1]
+        k0 = min(range(len(fs)), key=lambda i: abs(fs[i] - a.f0))
+        summ["z_in_at_f0_ohm"] = [round(zr[k0], 1), round(zx[k0], 1)]
+        summ["z_in_at_s11_min_ohm"] = [round(zr[i_min], 1), round(zx[i_min], 1)]
+    except Exception as e:
+        print("impedance export skipped:", e)
+    hyb_lines = []
+    if a.board == "A":
+        # a real hybrid is not perfect: J2's power off by d dB and its phase off by p degrees from -90
+        try:
+            summ["hybrid_imbalance"] = []
+            for d, p in HYBRID_CASES:
+                worst_ar, min_g = -1e9, 1e9
+                for sd, sp in ((1, 1), (1, -1), (-1, 1), (-1, -1)):
+                    hfss.edit_sources({"P1:1": (f"{10 ** (-sd * d / 20):.5f}W", "0deg"),
+                                       "P2:1": (f"{10 ** (sd * d / 20):.5f}W", f"{-90 + sp * p}deg")})
+                    sol = hfss.post.get_solution_data(
+                        expressions=["dB(AxialRatioValue)", "dB(RealizedGainRHCP)"], setup_sweep_name="Setup1 : FF",
+                        report_category="Far Fields", context="ff", primary_sweep_variable="Freq",
+                        variations={"Theta": ["0deg"], "Phi": ["0deg"], "Freq": ["All"]})
+                    fq, arc = series(sol, "dB(AxialRatioValue)")
+                    gc = series(sol, "dB(RealizedGainRHCP)")[1]
+                    inb = [i for i, v in enumerate(fq) if lo - eps <= v <= hi + eps]
+                    worst_ar = max(worst_ar, max(arc[i] for i in inb))
+                    min_g = min(min_g, min(gc[i] for i in inb))
+                summ["hybrid_imbalance"].append({"amplitude_dB": d, "phase_deg": p,
+                                                 "axial_ratio_worst_in_band_dB": round(worst_ar, 2),
+                                                 "rhcp_gain_min_in_band_dBic": round(min_g, 2)})
+                hyb_lines.append(f"hybrid off by {d} dB and {p} deg (worst sign): axial ratio {worst_ar:.2f} dB, "
+                                 f"RHCP gain at least {min_g:.2f} dBic in band (before the hybrid's own loss)")
+        except Exception as e:
+            print("hybrid imbalance cases skipped:", e)
+        hfss.edit_sources({"P1:1": ("1W", "0deg"), "P2:1": ("1W", "-90deg")})
     try:  # mesh size and convergence, if this AEDT version exports it
         summ["adaptive_passes"], summ["tetrahedra"], summ["final_delta_s"] = mesh_stats(
             hfss, os.path.join(out_dir, "convergence.txt"))
@@ -455,6 +493,10 @@ def report(hfss, a, ports, out_dir, elapsed):
     if "tetrahedra" in summ:
         lines.append(f"mesh: {summ['tetrahedra']} tetrahedra after {summ['adaptive_passes']} passes, "
                      f"delta S {summ.get('final_delta_s')}")
+    if "z_in_at_f0_ohm" in summ:
+        lines.append(f"input impedance at f0: {summ['z_in_at_f0_ohm'][0]} {summ['z_in_at_f0_ohm'][1]:+} j ohm; "
+                     f"at the S11 minimum: {summ['z_in_at_s11_min_ohm'][0]} {summ['z_in_at_s11_min_ohm'][1]:+} j ohm")
+    lines += hyb_lines
     lines.append(f"solve time: {elapsed / 60:.1f} min")
     text = "\n".join(lines)
     with open(os.path.join(out_dir, "summary.txt"), "w") as fh:
