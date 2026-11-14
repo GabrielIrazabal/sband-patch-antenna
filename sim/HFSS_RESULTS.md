@@ -163,6 +163,64 @@ Plain patches at ΔS 0.01 (19,672 to 50,623 tetrahedra).
 - Gain agrees within 0.12 to 0.22 dB. HFSS confirms that thicker PTFE on the face is the only configuration comfortably above 7 dBi.
 - The two bare-board runs differ most in frequency (−0.4 %) and bandwidth (+13 to +14 MHz). They also have the coarsest meshes (19,672 and 22,783 tetrahedra), so part of that is probably mesh. I am less sure of these two rows than of the rest.
 
+## Dual feed re-tuned for the 100 mm face, against the best option
+
+Added after the overnight run. The PTFE dual-feed board in the repo (37.38 / 6.90 mm) was tuned on the bare board, so on the 100 mm face its match only just passed (−10.3 dB). It was re-tuned in HFSS for the face and then given the same stress tests as the best option. **This is a simulation-only design: the KiCad board, the Gerbers and `generate_boards.py` were not changed.**
+
+Tuning (PTFE, 100 mm face, about 40,000 tetrahedra):
+
+| Patch / feed (mm) | Best match | Worst S11 in channel | Input impedance at best match | RHCP gain in channel (dBic) |
+| --- | --- | --- | --- | --- |
+| 37.38 / 6.90 (the repo's board) | −13.2 dB at 2.4215 GHz | −10.3 dB | not recorded | 6.98 to 7.17 |
+| 37.34 / 6.40 | −16.3 dB at 2.4230 GHz | −11.7 dB | 63 − 12j Ω | 7.07 to 7.25 |
+| 37.31 / 5.80 | −23.8 dB at 2.4230 GHz | −12.3 dB | 55 − 4j Ω | 7.13 to 7.36 |
+| **37.28 / 5.80 (tuned)** | **−23.8 dB at 2.4250 GHz** | **−13.5 dB** | 56 − 4j Ω | **7.16 to 7.36** |
+
+- The feed was stopped at 5.80 mm. Below that, `generate_boards.py` moves both SMAs out and adds traces the model does not have. A perfect 50 Ω match would need about 5.5 mm and would gain less than 0.1 dB.
+- Mesh check: at 58,212 tetrahedra the best match moves to 2.4260 GHz and the worst S11 to −12.8 dB. The dual-feed runs' ΔS (0.010 to 0.023) is higher than the cut-corner runs', so treat their frequencies as ±2 MHz.
+- −13.5 dB at the channel edges is close to the limit for this board thickness: the match bandwidth is 32 MHz against a 20 MHz channel.
+
+Side by side at nominal dimensions. Board A's gain is shown before and after the hybrid's 0.3 to 0.5 dB loss:
+
+| Quantity | Dual feed, tuned (A, 37.28 / 5.80) | Cut corner (B, 37.52 / 7.00 / 3.50) | Requirement |
+| --- | --- | --- | --- |
+| Best match | −23.8 dB at 2.4250 GHz | −31.8 dB at 2.4455 GHz | |
+| Worst S11 in channel | −13.5 dB | −15.5 dB | ≤ −10 dB |
+| −10 dB bandwidth | 32.4 MHz | 65.8 MHz | |
+| Worst axial ratio in channel | 0.11 dB (ideal hybrid); 0.8 dB (hybrid off by 0.5 dB, 3°); 1.4 dB (1 dB, 5°); 1.9 dB (1 dB, 10°) | 4.14 dB | ≤ 3 dB |
+| RHCP gain in channel | 7.16 to 7.36 dBic at the patch; 6.7 to 7.1 dBic after the hybrid | 7.08 to 7.24 dBic | ≥ 6.5 dBic |
+| Radiation efficiency | 87 % | 87 % | |
+| Half-power beamwidth | 73° / 73° | 72° / 73° | ≥ 60° |
+| Port isolation | −46 dB | one port | |
+
+Plot: [`results_hfss/compare_A_vs_B.png`](results_hfss/compare_A_vs_B.png).
+
+The same stress tests. Each cell is worst S11 / worst axial ratio / lowest RHCP gain in the channel. Board A's axial ratio is for a hybrid off by 0.5 dB and 3°, and its gain is at the patch (subtract 0.3 to 0.5 dB for the hybrid):
+
+| Case | Dual feed, tuned | Cut corner |
+| --- | --- | --- |
+| Nominal | −13.5 dB / 0.8 dB / 7.16 dBic | −15.5 dB / 4.1 dB / 7.08 dBic |
+| Dk 1 % low (2.52) | −7.4 dB / 0.8 dB / 6.48 dBic | −10.0 dB / 8.4 dB / 6.09 dBic |
+| Dk 1 % high (2.58) | −7.3 dB / 0.8 dB / 6.47 dBic | −14.8 dB / 8.7 dB / 6.53 dBic |
+| Patch 0.3 mm small | −5.8 dB / 0.8 dB / 5.98 dBic | −8.0 dB / 10.4 dB / 5.48 dBic |
+| Patch 0.3 mm large | −5.9 dB / 0.7 dB / 6.10 dBic | −16.0 dB / 10.6 dB / 6.20 dBic |
+| With the SMA | −11.1 dB / 0.7 dB / 6.99 dBic (match 4 MHz lower) | −18.2 dB / 4.3 dB / 7.08 dBic |
+| With solder mask | −9.2 dB / 0.7 dB / 6.78 dBic (match 8 MHz lower) | −14.8 dB / 6.6 dB / 6.80 dBic |
+| On a 100 mm metal box | −13.5 dB / 0.7 dB / 6.90 dBic | −15.6 dB / 4.1 dB / 6.79 dBic |
+| Lossless copper | −12.4 dB / 0.8 dB / 7.33 dBic | −15.6 dB / 4.2 dB / 7.22 dBic |
+
+What this shows:
+
+- **The dual feed keeps its circular polarization in every case** (under 1 dB with a typical hybrid, under 2 dB with a poor one). The cut corner's axial ratio goes to 8 to 11 dB with a 1 % Dk error or a 0.3 mm size error.
+- **The dual feed is not more tolerant in signal strength.** The same errors detune its narrower match, so its gain at the patch drops to 6.0 to 6.5 dBic, and to about 5.5 to 6.2 dBic after the hybrid. The cut corner drops to 5.5 to 6.5 dBic. Both fall to about 6.5 dBic or below at a channel edge when the frequency is off by about 17 MHz.
+- **At nominal dimensions the two deliver about the same RHCP gain** once the hybrid's loss is counted (6.7 to 7.1 against 7.08 to 7.24 dBic). The cut corner is ahead by 0.1 to 0.4 dB.
+- **With a hybrid, the radio sees a good match even when the patch is detuned,** because the two equal reflections go to the hybrid's load, not back to the radio. The power is still lost, which is what the gain figures show.
+- Not modelled: the hybrid itself, the two cables (1 mm of length mismatch in PTFE coax is about 4° of phase), and the board that carries the hybrid.
+
+Recommendation, moderately sure: choose the dual feed if the 3 dB axial-ratio requirement is firm, or if the ground station cannot tolerate polarization that varies from board to board. Choose the cut corner if signal strength is what matters and one cable is worth more than clean polarization. Either way, order size variants and measure, because both need the frequency to land within about ±10 MHz.
+
+Runs: `results_hfss/A_L37.28_f5.80_*` and `A_L3?.?8_f5.80_*` (group `TA` in `hfss_batch.py`, run with `--mesh 40000`), plus the tuning steps `A_L37.34_f6.40_*` and `A_L37.31_f5.80_*`. They are not in the table under "Every run".
+
 ## How to reproduce
 
 ```
