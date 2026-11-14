@@ -75,6 +75,8 @@ def main():
     ap.add_argument("--project-dir", default=os.path.join(HERE, "hfss_projects"))
     ap.add_argument("--only", nargs="*", help="test groups (T0..T5) or folder names")
     ap.add_argument("--extra", default="", help="extra hfss_patch.py arguments for every run")
+    ap.add_argument("--mesh", type=int, default=0,
+                    help="rerun with a fixed mesh size (--target-tets), e.g. 40000; folders get a _mesh40k suffix")
     ap.add_argument("--commit", action="store_true", help="git add + commit each result")
     ap.add_argument("--timeout", type=float, default=25, help="minutes per attempt")
     a = ap.parse_args()
@@ -86,6 +88,11 @@ def main():
     for group, name, args in RUNS:
         if a.only and group not in a.only and name not in a.only:
             continue
+        if a.mesh:
+            if "--delta-s" in args:   # the mesh-convergence runs themselves
+                continue
+            name += f"_mesh{a.mesh // 1000}k"
+            args += f" --target-tets {a.mesh}"
         if os.path.exists(os.path.join(out, name, "summary.json")):
             print(f"[skip] {name}", flush=True)
             continue

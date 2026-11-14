@@ -83,6 +83,9 @@ def parse():
     ap.add_argument("--pec", action="store_true", help="lossless copper (default: finite-conductivity copper)")
     ap.add_argument("--delta-s", type=float, default=0.01, help="adaptive mesh convergence target")
     ap.add_argument("--passes", type=int, default=20, help="maximum adaptive passes")
+    ap.add_argument("--target-tets", type=int, default=0,
+                    help="keep refining until the mesh has at least this many tetrahedra (ignores --delta-s); "
+                         "40000 is near the top of what AEDT Student allows (64000)")
     ap.add_argument("--pad", type=float, default=0.0, help="air box padding in mm (default: a quarter wavelength)")
     ap.add_argument("--sma", action="store_true", help="coax + wave port below the ground instead of the lumped port")
     ap.add_argument("--mask", action="store_true", help="solder mask on the top of the board, except over the patch")
@@ -103,6 +106,8 @@ def design_name(a):
         name += f"_Gm{a.Gm:.0f}"
     if a.tag:
         name += f"_{a.tag}"
+    if a.target_tets:
+        name += f"_mesh{a.target_tets // 1000}k"
     return name
 
 
@@ -214,6 +219,25 @@ def build(hfss, a):
     return ports
 
 
+def print_messages(hfss):
+    """AEDT's own warnings and errors for this design, so a failed solve explains itself in the log."""
+    try:
+        for msg in hfss.odesktop.GetMessages(hfss.project_name, hfss.design_name, 1):
+            print("AEDT:", str(msg).strip())
+    except Exception as e:
+        print("could not read AEDT messages:", e)
+
+
+def mesh_stats(hfss, path=None):
+    """(passes, tetrahedra, last delta S) from AEDT's convergence table."""
+    path = path or os.path.join(hfss.working_directory, "convergence.txt")
+    hfss.odesign.ExportConvergence("Setup1", "", path, True)
+    txt = open(path, errors="ignore").read()
+    rows = [[c.strip() for c in ln.split("|")] for ln in txt.splitlines() if "|" in ln and ln.strip()[:1].isdigit()]
+    last = rows[-1]
+    return int(last[0]), int(last[1]), (float(last[2]) if len(last) > 2 and last[2] not in ("", "N/A") else None)
+
+
 def solve(hfss, a, ports):
     setup = hfss.create_setup(name="Setup1")
     setup.props["Frequency"] = f"{a.f0}GHz"
@@ -221,6 +245,22 @@ def solve(hfss, a, ports):
     setup.props["MaxDeltaS"] = a.delta_s
     setup.props["MinimumConvergedPasses"] = 2
     setup.update()
+    if a.target_tets:
+        # mesh-size-controlled refinement: adapt (no sweeps yet) until the mesh reaches the target.
+        # A pass grows the mesh by at most 30 %, so the final size stays under 1.3 x target.
+        setup.props["MaxDeltaS"] = 1e-5
+        passes = 8
+        while True:
+            setup.props["MaximumPasses"] = passes
+            setup.update()
+            if not hfss.analyze_setup("Setup1", cores=a.cores):
+                print_messages(hfss)
+                raise RuntimeError("HFSS adaptive solve failed (see the AEDT message log)")
+            tets = mesh_stats(hfss)[1]
+            print(f"adaptive: {passes} passes, {tets} tetrahedra", flush=True)
+            if tets >= a.target_tets or passes >= 40:
+                break
+            passes += 2 if tets * 1.69 < a.target_tets else 1
     hfss.create_linear_count_sweep(setup="Setup1", unit="GHz", start_frequency=2.20, stop_frequency=2.65,
                                    num_of_freq_points=901, name="S", sweep_type="Interpolating",
                                    save_fields=False)
@@ -235,12 +275,9 @@ def solve(hfss, a, ports):
         # ideal hybrid: equal power, J2 lags J1 by 90 deg -> RHCP
         hfss.edit_sources({"P1:1": ("1W", "0deg"), "P2:1": ("1W", "-90deg")})
     ok = hfss.analyze_setup("Setup1", cores=a.cores)
-    try:  # AEDT's own warnings and errors for this design, so a failed solve explains itself in the log
-        for msg in hfss.odesktop.GetMessages(hfss.project_name, hfss.design_name, 1):
-            print("AEDT:", str(msg).strip())
-    except Exception as e:
-        print("could not read AEDT messages:", e)
+    print_messages(hfss)
     if not ok:
+
         raise RuntimeError("HFSS solve failed (see the AEDT message log)")
 
 
@@ -391,15 +428,8 @@ def report(hfss, a, ports, out_dir, elapsed):
             summ["active_s11_worst_in_band_dB"] = round(
                 max(s for fq, s in zip(fs, act) if lo - eps <= fq <= hi + eps), 2)
     try:  # mesh size and convergence, if this AEDT version exports it
-        conv = os.path.join(out_dir, "convergence.txt")
-        hfss.odesign.ExportConvergence("Setup1", "", conv, True)
-        txt = open(conv, errors="ignore").read()
-        nums = [ln.split("|") for ln in txt.splitlines() if "|" in ln and ln.strip()[:1].isdigit()]
-        if nums:
-            last = [c.strip() for c in nums[-1]]
-            summ["adaptive_passes"] = int(last[0])
-            summ["tetrahedra"] = int(last[1])
-            summ["final_delta_s"] = float(last[2]) if len(last) > 2 and last[2] not in ("", "N/A") else None
+        summ["adaptive_passes"], summ["tetrahedra"], summ["final_delta_s"] = mesh_stats(
+            hfss, os.path.join(out_dir, "convergence.txt"))
     except Exception as e:
         print("convergence export skipped:", e)
 
