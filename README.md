@@ -16,7 +16,7 @@ Research doc: PJ-10004, S-band patch antenna research (internal to SSI) · Autho
 | Simulation (openEMS) | Done for five boards: two designs × two materials, plus a cut-corner PTFE board tuned for the satellite face |
 | KiCad boards, size variants, Gerbers | Done: 15 boards, all DRC clean, zips in [`fab/`](fab) |
 | **Decision needed: board material** | RO4350B does not reach the 6.5 dBic gain requirement; JLC's PTFE does once mounted on the satellite. See [Gain](#gain-the-one-requirement-not-met-on-ro4350b) |
-| Cross-check in HFSS | Not done. [`sim/hfss_patch.py`](sim/hfss_patch.py) is an unrun draft |
+| Cross-check in HFSS | Done. HFSS agrees within 0.4 % in frequency and 0.3 dB in gain. See [`sim/HFSS_RESULTS.md`](sim/HFSS_RESULTS.md) |
 | JLC order, VNA test | Not done |
 
 ## Requirements and how the designs compare
@@ -230,7 +230,7 @@ Stand the board on M3 standoffs: the SMA sticks out the back.
 | Hybrid location and part for rev 2 | TT&C lead |
 | A connectorized 2.4 GHz 90° hybrid and two equal-length SMA cables for bench testing | TT&C lead / lab |
 | Outgassing data for ZYF255DA, if PTFE is chosen | Gabriel |
-| Cross-check the final design in HFSS | Gabriel |
+| Solder mask on the top side: HFSS shows mask around the patch shifts the tuning by about −6 to −8 MHz ([`sim/HFSS_RESULTS.md`](sim/HFSS_RESULTS.md)). Ask JLC whether the top can be left free of mask | Gabriel |
 
 ## Reference design
 

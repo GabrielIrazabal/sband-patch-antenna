@@ -102,11 +102,23 @@ def main():
             cmd = [sys.executable, os.path.join(HERE, "hfss_patch.py"), "--project-dir", a.project_dir]
             cmd += args.split() + a.extra.split()
             log = os.path.join(logs, f"{name}_try{attempt}.log")
-            try:
-                with open(log, "w") as fh:
-                    rc = subprocess.run(cmd, stdout=fh, stderr=subprocess.STDOUT, timeout=a.timeout * 60).returncode
-            except subprocess.TimeoutExpired:
-                rc = "timeout"
+            with open(log, "w") as fh:
+                proc = subprocess.Popen(cmd, stdout=fh, stderr=subprocess.STDOUT)
+                t0 = time.time()
+                while True:
+                    try:
+                        rc = proc.wait(timeout=20)
+                        break
+                    except subprocess.TimeoutExpired:
+                        pass
+                    # watchdog: AEDT sometimes hangs at "Solving" with no solver process. A healthy run
+                    # either writes to its log or has hf3d.exe running.
+                    quiet = time.time() - os.path.getmtime(log)
+                    solver = "hf3d.exe" in subprocess.run(["tasklist"], capture_output=True, text=True).stdout.lower()
+                    if time.time() - t0 > a.timeout * 60 or (quiet > 240 and not solver):
+                        rc = "hung" if quiet > 240 else "timeout"
+                        subprocess.run(["taskkill", "/F", "/T", "/PID", str(proc.pid)], capture_output=True)
+                        break
             if rc == 0 and os.path.exists(os.path.join(out, name, "summary.json")):
                 done = True
                 break

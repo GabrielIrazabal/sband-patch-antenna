@@ -18,7 +18,8 @@ Gabriel is responsible for the S-band antenna requirements and rev-1 design.
 - Everything meets the requirements except gain. RO4350B gives 5.6–6.3 dBic; the requirement is 6.5 dBic, ideally 7+. PTFE gives 6.3–7.05 dBic depending on the ground behind it.
 - The simulation reads about 0.4–0.9 % low against two published measured patches, so real boards may land 10–20 MHz high and the +0.3 mm variants may be the best ones.
 - **Current best option in simulation:** board B (cut corners) on PTFE, tuned for a 100 mm metal face (`B_cutcorner_RHCP_PTFE_face100`: patch 37.52 mm, feed 7.00 mm, cut 3.50 mm). It gives 6.8–7.05 dBic. Once board A's 0.3–0.5 dB hybrid loss is counted, B is about 0.5 dB ahead on gain and needs one cable instead of two. Its weak point is polarization that is sensitive to Dk and mounting. Gabriel has not decided the material or the board.
-- Nothing has been ordered or built. HFSS has not been run.
+- Nothing has been ordered or built.
+- HFSS was run on 14 November 2026 and agrees with openEMS within 0.4 % in frequency and 0.3 dB in gain. Results and caveats are in `sim/HFSS_RESULTS.md`.
 
 ## What's next, roughly in order
 

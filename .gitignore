@@ -27,3 +27,6 @@ sim/_batch.sh
 
 # Gerber folders (the zips next to them are tracked)
 fab/*/
+
+# AEDT batch log written to the working directory
+/batch.log

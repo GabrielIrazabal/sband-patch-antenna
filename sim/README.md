@@ -5,7 +5,7 @@ Two tools:
 | Tool | State | Use |
 | --- | --- | --- |
 | **openEMS** ([`openems_patch.py`](openems_patch.py)) | Working. All results in this repo come from it | Free FDTD solver, scripted in Python, runs on macOS and Linux |
-| **Ansys HFSS** ([`hfss_patch.py`](hfss_patch.py)) | Draft, never run | Independent cross-check on Windows through PyAEDT |
+| **Ansys HFSS** ([`hfss_patch.py`](hfss_patch.py)) | Working (AEDT Student 2025 R2, PyAEDT 1.9). Results in [`HFSS_RESULTS.md`](HFSS_RESULTS.md) | Independent cross-check on Windows through PyAEDT |
 
 ## openEMS
 
@@ -109,11 +109,15 @@ Other runs:
 | Board B's circular polarization | Corner cut c | Best when c ≈ 0.95 · L · √(1 / (2Q)); Q ≈ 46 on the bare board, about 57 on a 100 mm ground |
 | Board B's centre frequency | Patch side | The axial-ratio minimum sits about f0/(2Q) above the plain patch's resonance |
 
-## HFSS (cross-check, not yet run)
+## HFSS (cross-check)
 
-`hfss_patch.py` builds the same geometry in HFSS through PyAEDT. It has never been run, so expect to fix some PyAEDT argument names on the first try. Its defaults are the RO4350B dimensions from openEMS.
+`hfss_patch.py` builds the same geometry in HFSS through PyAEDT. Its defaults are the RO4350B dimensions from openEMS. The results and what was learned are in [`HFSS_RESULTS.md`](HFSS_RESULTS.md).
 
-Options match the openEMS script where they can: `--er`, `--tand`, `--h`, `--L`, `--feed`, `--cut`, `--Gm 100` (100 mm metal ground behind the board), plus `--pec` (lossless copper), `--delta-s` (mesh convergence target) and `--tag`. Results go to `results_hfss/<design>/` with the same folder names as `results_openems/`.
+Options match the openEMS script where they can: `--er`, `--tand`, `--h`, `--L`, `--feed`, `--cut`, `--Gm 100` (100 mm metal ground behind the board), plus `--pec` (lossless copper), `--delta-s` (mesh convergence target), `--target-tets` (refine to a mesh size instead), `--sma`, `--mask`, `--box` (things openEMS left out) and `--tag`. Results go to `results_hfss/<design>/` with the same folder names as `results_openems/`.
+
+- **Use `--target-tets 40000` for the cut-corner boards.** The default ΔS 0.01 stops too early and puts the axial-ratio minimum up to 12.5 MHz low. The Student edition refuses meshes above 64,000 tetrahedra.
+- `hfss_batch.py` runs the whole test list (`--mesh 40000` for the converged-mesh repeats) and `hfss_compare.py` prints HFSS next to openEMS.
+- Keep `--project-dir` outside any synced folder such as OneDrive.
 
 The antenna's parameters, the run order and the openEMS numbers to compare against are in [`../HFSS_TASK.md`](../HFSS_TASK.md).
 
