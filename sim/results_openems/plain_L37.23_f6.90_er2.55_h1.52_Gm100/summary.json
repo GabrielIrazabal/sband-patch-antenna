@@ -1,0 +1,37 @@
+{
+  "design": "plain_L37.23_f6.90_er2.55_h1.52_Gm100",
+  "board": "plain",
+  "params": {
+    "f0": 2425000000.0,
+    "bw": 20000000.0,
+    "L": 37.23,
+    "feed": 6.9,
+    "cut": 2.6,
+    "h": 1.524,
+    "G": 60.0,
+    "er": 2.55,
+    "tand": 0.0018,
+    "res": 0.5,
+    "pad": 70.0
+  },
+  "lossy_metal": true,
+  "s11_min_dB": -14.69480811060944,
+  "s11_min_freq_GHz": 2.4355,
+  "zin_at_s11_min_ohm": [
+    62.751978542609336,
+    -16.67663242498836
+  ],
+  "s11_worst_in_band_dB": -8.305073886965328,
+  "s11_10dB_band_MHz": 30.5,
+  "phasor_check_ok": true,
+  "zin_r_peak_ohm": 85.14528043959439,
+  "zin_r_peak_freq_GHz": 2.4215,
+  "realized_gain_total_at_f0_dBi": 6.922091101515999,
+  "directivity_at_f0_dBi": 7.824392591386711,
+  "radiation_efficiency_at_f0": 0.8697311362694404,
+  "hpbw_deg_phi0_phi90": [
+    74.0,
+    72.0
+  ],
+  "solve_minutes": 7.6
+}

@@ -1,0 +1,3 @@
+pyaedt>=0.12
+numpy
+matplotlib

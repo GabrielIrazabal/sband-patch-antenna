@@ -1,0 +1,48 @@
+{
+  "design": "B_L37.56_f7.00_c3.80_er2.55_h1.52_Gm100",
+  "board": "B",
+  "params": {
+    "f0": 2425000000.0,
+    "bw": 20000000.0,
+    "L": 37.56,
+    "feed": 7.0,
+    "cut": 3.8,
+    "h": 1.524,
+    "G": 60.0,
+    "er": 2.55,
+    "tand": 0.0018,
+    "res": 0.5,
+    "pad": 70.0
+  },
+  "lossy_metal": true,
+  "s11_min_dB": -71.68553069472567,
+  "s11_min_freq_GHz": 2.456,
+  "zin_at_s11_min_ohm": [
+    50.020230939019555,
+    -0.016411058638654104
+  ],
+  "s11_worst_in_band_dB": -11.486324929271367,
+  "s11_10dB_band_MHz": 71.0,
+  "phasor_check_ok": true,
+  "zin_r_peak_ohm": 51.19280500516046,
+  "zin_r_peak_freq_GHz": 2.452,
+  "realized_gain_total_at_f0_dBi": 6.964839659406841,
+  "directivity_at_f0_dBi": 7.811635365252652,
+  "radiation_efficiency_at_f0": 0.8832452369036642,
+  "rhcp_gain_at_f0_dBic": 6.9404510114516516,
+  "rhcp_gain_min_in_band_dBic": 6.743062316525021,
+  "rhcp_minus_lhcp_at_f0_dB": 22.493765834436815,
+  "axial_ratio_at_f0_dB": 1.3060904354462446,
+  "axial_ratio_worst_in_band_dB": 4.07706613285142,
+  "axial_ratio_min_dB": 1.2896914247725317,
+  "axial_ratio_min_freq_GHz": 2.4275,
+  "axial_ratio_3dB_band_MHz": 12.5,
+  "hpbw_deg_phi0_phi90": [
+    72.0,
+    74.0
+  ],
+  "hand": "RHCP",
+  "hand_time_domain_check": "RHCP",
+  "hand_time_domain_margin_dB": 22.08275210610635,
+  "solve_minutes": 6.4
+}

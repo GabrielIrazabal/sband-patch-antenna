@@ -1,0 +1,29 @@
+# KiCad local state
+*.kicad_prl
+*-backups/
+fp-info-cache
+_autosave-*
+*.lck
+~*
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+
+# AEDT (keep the .aedt project and results/ CSVs/PNGs; skip the solver cache)
+*.aedtresults/
+*.aedt.lock
+*.aedt.auto
+*.lock
+sim/*.aedb/
+
+.DS_Store
+
+# openEMS raw solver output
+sim/_work/
+sim/_log_*.log
+sim/_batch.sh
+
+# Gerber folders (the zips next to them are tracked)
+fab/*/
