@@ -1,0 +1,12 @@
+design: B_L31.54_f5.90_c3.13_er3.66_h1.52_mesh40k
+S11 minimum: -26.4 dB at 2.4460 GHz
+worst S11 in 2.415-2.435 GHz: -14.5 dB (need <= -10.0)
+-10 dB bandwidth: 73.1 MHz
+axial ratio minimum: 0.68 dB at 2.4225 GHz; 3 dB bandwidth 18.1 MHz
+worst axial ratio in band: 4.24 dB (need <= 3.0)
+RHCP realized gain in band: 5.71 to 5.85 dBic (need >= 6.5)
+total realized gain at f0: 5.86 dBi; directivity 6.8 dBi; radiation efficiency 83 %
+RHCP minus LHCP at f0: 23.3 dB -> RHCP
+HPBW phi=0: 90 deg, phi=90: 90 deg (need >= 60.0)
+mesh: 46951 tetrahedra after 23 passes, delta S 0.0021528
+solve time: 6.1 min
