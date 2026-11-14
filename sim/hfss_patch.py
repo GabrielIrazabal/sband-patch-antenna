@@ -1,12 +1,10 @@
 """Build and solve the S-band patch in Ansys HFSS through PyAEDT.
 
-STATUS: DRAFT, NOT YET RUN. It was written on a Mac without AEDT. Expect to fix a few
-PyAEDT call signatures on the first run (they change between releases); check the
-installed version with `pip show pyaedt` and its docs. The geometry, coordinate
-convention and pass criteria below are the parts to keep.
+STATUS: runs on AEDT Student 2025 R2 with PyAEDT 1.9 (Windows). The geometry, coordinate
+convention and pass criteria are the same as the openEMS model (see openems_patch.py and
+README.md); this script is the independent cross-check.
 
-The design itself was done in openEMS (see openems_patch.py and README.md). This script is
-the independent cross-check. PTFE boards: add --er 2.55 --tand 0.0018 and their own L/feed/cut.
+PTFE boards: add --er 2.55 --tand 0.0018 and their own L/feed/cut.
 --Gm 100 puts a 100 mm metal ground behind the 60 mm board (the satellite face).
 
 Usage (Windows, AEDT Student installed, `pip install -r requirements.txt`):
@@ -18,8 +16,15 @@ Usage (Windows, AEDT Student installed, `pip install -r requirements.txt`):
   # the current best option: board B on PTFE, tuned for and solved on a 100 mm metal face
   python hfss_patch.py --board B --L 37.52 --feed 7.00 --cut 3.50 --er 2.55 --tand 0.0018 --Gm 100
 
+Things openEMS left out (HFSS_TASK.md test 3):
+  --sma    replace the lumped port with a short 50 ohm coax below the ground and a wave port
+  --mask   solder mask on the top of the board, everywhere except over the patch
+  --box    a metal box (Gm x Gm x box_depth) behind the board instead of a flat sheet
+
 Results go to sim/results_hfss/<design>/, named like the openEMS folders in
-sim/results_openems/ so the two can be compared side by side.
+sim/results_openems/ so the two can be compared side by side. By default each design is
+its own AEDT project in sim/hfss_projects/; pass --project-dir to keep the (large) solver
+files somewhere else, e.g. outside a synced folder.
 
 Coordinates (HFSS): ground at z=0, patch at z=h, antenna radiates toward +z.
 x = right and y = up when looking at the patch from the front (+z), i.e. the KiCad top
@@ -33,10 +38,13 @@ the coordinate mapping or the source phasing is wrong; fix that before trusting 
 """
 import argparse
 import csv
+import json
 import math
 import os
+import time
 
 C0 = 299_792_458.0
+HERE = os.path.dirname(os.path.abspath(__file__))
 
 DEFAULTS = dict(
     f0=2.425,      # GHz, placeholder until the carrier is confirmed
@@ -55,19 +63,35 @@ DEFAULTS = dict(
 
 REQ = dict(s11_db=-10.0, ar_db=3.0, gain_dbic=6.5, hpbw_deg=60.0)
 
+# --sma: SMA-sized coax (1.27 mm pin in PTFE); outer radius chosen for exactly 50 ohm
+SMA_R_IN = 0.635
+SMA_ER = 2.1
+SMA_R_OUT = SMA_R_IN * math.exp(50.0 * math.sqrt(SMA_ER) / 59.96)
+SMA_LEN = 5.0
+# --mask: typical LPI solder mask
+MASK_T, MASK_ER, MASK_TAND = 0.025, 3.8, 0.025
+
 
 def parse():
     ap = argparse.ArgumentParser()
     ap.add_argument("--board", choices=["plain", "A", "B"], required=True)
     for k, val in DEFAULTS.items():
         ap.add_argument(f"--{k}", type=float, default=val)
-    ap.add_argument("--version", default=None, help='AEDT version, e.g. "2026.1"; default = newest installed')
-    ap.add_argument("--non-graphical", action="store_true")
+    ap.add_argument("--version", default=None, help='AEDT version, e.g. "2025.2"; default = newest installed')
+    ap.add_argument("--graphical", action="store_true", help="show the AEDT window (default: non-graphical)")
     ap.add_argument("--cores", type=int, default=4)
     ap.add_argument("--pec", action="store_true", help="lossless copper (default: finite-conductivity copper)")
     ap.add_argument("--delta-s", type=float, default=0.01, help="adaptive mesh convergence target")
+    ap.add_argument("--passes", type=int, default=20, help="maximum adaptive passes")
+    ap.add_argument("--pad", type=float, default=0.0, help="air box padding in mm (default: a quarter wavelength)")
+    ap.add_argument("--sma", action="store_true", help="coax + wave port below the ground instead of the lumped port")
+    ap.add_argument("--mask", action="store_true", help="solder mask on the top of the board, except over the patch")
+    ap.add_argument("--box", action="store_true", help="metal box behind the board instead of a flat sheet (needs --Gm)")
+    ap.add_argument("--box-depth", type=float, default=100.0, help="depth of the --box, mm")
     ap.add_argument("--tag", default="", help="suffix for the design and results folder name")
-    ap.add_argument("--project", default=os.path.join(os.path.dirname(os.path.abspath(__file__)), "patch.aedt"))
+    ap.add_argument("--project-dir", default=os.path.join(HERE, "hfss_projects"),
+                    help="folder for the AEDT project (one project per design)")
+    ap.add_argument("--out", default=os.path.join(HERE, "results_hfss"), help="results folder")
     return ap.parse_args()
 
 
@@ -91,24 +115,38 @@ def build(hfss, a):
     m = hfss.modeler
     m.model_units = "mm"
 
-    mat = hfss.materials.add_material("RO4350B_design")
+    mat = hfss.materials.add_material("substrate_design")
     mat.permittivity = a.er
     mat.dielectric_loss_tangent = a.tand
 
     G, h = a.G, a.h
     Gg = max(a.G, a.Gm)   # metal ground side (larger than the board with --Gm)
-    m.create_box(origin=[-G / 2, -G / 2, 0], sizes=[G, G, h], name="substrate", material="RO4350B_design")
+    m.create_box(origin=[-G / 2, -G / 2, 0], sizes=[G, G, h], name="substrate", material="substrate_design")
 
     # feed points (HFSS coordinates, see module docstring)
     feeds = [(a.feed, 0.0)]
     if a.board == "A":
         feeds.append((0.0, a.feed))
 
-    # ground sheet with a clearance hole at each probe
-    gnd = m.create_rectangle(orientation="XY", origin=[-Gg / 2, -Gg / 2, 0], sizes=[Gg, Gg], name="ground")
-    for i, (x, y) in enumerate(feeds, 1):
-        hole = m.create_circle(orientation="XY", origin=[x, y, 0], radius=a.r_clear, name=f"hole{i}")
-        m.subtract(gnd, [hole], keep_originals=False)
+    sheets = ["patch"]
+    z_bottom = 0.0
+    if a.box:
+        # solid metal body behind the board; its top face is the ground. A shallow pocket under each
+        # probe leaves room for the lumped port ring (pocket radius = the ground clearance).
+        body = m.create_box(origin=[-Gg / 2, -Gg / 2, -a.box_depth], sizes=[Gg, Gg, a.box_depth], name="body",
+                            material="pec" if a.pec else "copper")
+        for i, (x, y) in enumerate(feeds, 1):
+            pocket = m.create_cylinder(orientation="Z", origin=[x, y, -0.5], radius=a.r_clear, height=0.5,
+                                       name=f"pocket{i}")
+            m.subtract(body, [pocket], keep_originals=False)
+        z_bottom = -a.box_depth
+    else:
+        # ground sheet with a clearance hole at each probe
+        gnd = m.create_rectangle(orientation="XY", origin=[-Gg / 2, -Gg / 2, 0], sizes=[Gg, Gg], name="ground")
+        for i, (x, y) in enumerate(feeds, 1):
+            hole = m.create_circle(orientation="XY", origin=[x, y, 0], radius=a.r_clear, name=f"hole{i}")
+            m.subtract(gnd, [hole], keep_originals=False)
+        sheets.append("ground")
 
     # patch sheet
     s = a.L / 2
@@ -116,78 +154,138 @@ def build(hfss, a):
         c = a.cut
         # corners (-s,+s) and (+s,-s) truncated  == KiCad top-left / bottom-right
         pts = [[-s + c, s, h], [s, s, h], [s, -s + c, h], [s - c, -s, h], [-s, -s, h], [-s, s - c, h]]
-        patch = m.create_polyline(pts, close_surface=True, cover_surface=True, name="patch")
     else:
-        patch = m.create_rectangle(orientation="XY", origin=[-s, -s, h], sizes=[a.L, a.L], name="patch")
+        pts = [[-s, s, h], [s, s, h], [s, -s, h], [-s, -s, h]]
+    m.create_polyline(pts, close_surface=True, cover_surface=True, name="patch")
+
+    if a.mask:
+        mm = hfss.materials.add_material("solder_mask")
+        mm.permittivity = MASK_ER
+        mm.dielectric_loss_tangent = MASK_TAND
+        mask = m.create_box(origin=[-G / 2, -G / 2, h], sizes=[G, G, MASK_T], name="mask", material="solder_mask")
+        opening = m.create_polyline(pts, close_surface=True, cover_surface=True, name="mask_opening")
+        m.sweep_along_vector(opening, [0, 0, MASK_T])
+        m.subtract(mask, [opening], keep_originals=False)
 
     if a.pec:
-        hfss.assign_perfecte_to_sheets(["ground", "patch"], name="PEC_sheets")
+        hfss.assign_perfecte_to_sheets(sheets, name="PEC_sheets")
     else:
         # finite-conductivity copper, to match the lossy copper in the openEMS model
-        hfss.assign_finite_conductivity(["ground", "patch"], material="copper", name="Cu_sheets")
+        hfss.assign_finite_conductivity(sheets, material="copper", name="Cu_sheets")
 
-    # probes + lumped ports (annulus in the ground hole, integration line radial along +x)
+    # probes + ports
+    ports = []
     for i, (x, y) in enumerate(feeds, 1):
         pin = m.create_cylinder(orientation="Z", origin=[x, y, 0], radius=a.r_pin, height=h,
                                 name=f"pin{i}", material="pec")
         m.subtract("substrate", [pin], keep_originals=True)
-        ring = m.create_circle(orientation="XY", origin=[x, y, 0], radius=a.r_clear, name=f"port{i}")
-        inner = m.create_circle(orientation="XY", origin=[x, y, 0], radius=a.r_pin, name=f"inner{i}")
-        m.subtract(ring, [inner], keep_originals=False)
-        hfss.lumped_port(assignment=f"port{i}", create_port_sheet=False, impedance=50,
-                         integration_line=[[x + a.r_pin, y, 0], [x + a.r_clear, y, 0]],
-                         name=f"P{i}", renormalize=True)
+        if a.sma:
+            # coax below the ground: PEC cup (outer conductor + back wall), PTFE fill, 1.27 mm pin.
+            # The wave port is the PTFE annulus on the back wall, de-embedded to the ground plane.
+            wall = 0.5
+            cup = m.create_cylinder(orientation="Z", origin=[x, y, -SMA_LEN - wall], radius=SMA_R_OUT + wall,
+                                    height=SMA_LEN + wall, name=f"sma_shell{i}", material="pec")
+            diel = m.create_cylinder(orientation="Z", origin=[x, y, -SMA_LEN], radius=SMA_R_OUT, height=SMA_LEN,
+                                     name=f"sma_diel{i}", material="sma_ptfe")
+            m.subtract(cup, [diel], keep_originals=True)
+            cpin = m.create_cylinder(orientation="Z", origin=[x, y, -SMA_LEN], radius=SMA_R_IN, height=SMA_LEN,
+                                     name=f"sma_pin{i}", material="pec")
+            m.subtract(diel, [cpin], keep_originals=True)
+            face = min(m[f"sma_diel{i}"].faces, key=lambda f: f.center[2])
+            hfss.wave_port(assignment=face, integration_line=[[x + SMA_R_IN, y, -SMA_LEN], [x + SMA_R_OUT, y, -SMA_LEN]],
+                           modes=1, impedance=50, name=f"P{i}", renormalize=True, deembed=SMA_LEN)
+            z_bottom = min(z_bottom, -SMA_LEN - wall)
+        else:
+            # lumped port: annulus in the ground hole, integration line radial along +x
+            ring = m.create_circle(orientation="XY", origin=[x, y, 0], radius=a.r_clear, name=f"port{i}")
+            inner = m.create_circle(orientation="XY", origin=[x, y, 0], radius=a.r_pin, name=f"inner{i}")
+            m.subtract(ring, [inner], keep_originals=False)
+            hfss.lumped_port(assignment=f"port{i}", create_port_sheet=False, impedance=50,
+                             integration_line=[[x + a.r_pin, y, 0], [x + a.r_clear, y, 0]],
+                             name=f"P{i}", renormalize=True)
+        ports.append(f"P{i}")
 
     # air box a quarter wavelength beyond everything, radiation boundary
-    pad = C0 / (a.f0 * 1e9) / 4 * 1e3
-    m.create_box(origin=[-Gg / 2 - pad, -Gg / 2 - pad, -pad], sizes=[Gg + 2 * pad, Gg + 2 * pad, h + 2 * pad],
-                 name="airbox", material="vacuum")
+    pad = a.pad if a.pad > 0 else C0 / (a.f0 * 1e9) / 4 * 1e3
+    top = h + (MASK_T if a.mask else 0)
+    m.create_box(origin=[-Gg / 2 - pad, -Gg / 2 - pad, z_bottom - pad],
+                 sizes=[Gg + 2 * pad, Gg + 2 * pad, top - z_bottom + 2 * pad], name="airbox", material="vacuum")
     hfss.assign_radiation_boundary_to_objects("airbox")
-    return [f"P{i}" for i in range(1, len(feeds) + 1)]
+    return ports
 
 
 def solve(hfss, a, ports):
     setup = hfss.create_setup(name="Setup1")
     setup.props["Frequency"] = f"{a.f0}GHz"
-    setup.props["MaximumPasses"] = 20
+    setup.props["MaximumPasses"] = a.passes
     setup.props["MaxDeltaS"] = a.delta_s
+    setup.props["MinimumConvergedPasses"] = 2
     setup.update()
-    hfss.create_linear_count_sweep(setup="Setup1", units="GHz", start_frequency=2.20, stop_frequency=2.65,
-                                   num_of_freq_points=451, name="S", sweep_type="Interpolating",
+    hfss.create_linear_count_sweep(setup="Setup1", unit="GHz", start_frequency=2.20, stop_frequency=2.65,
+                                   num_of_freq_points=901, name="S", sweep_type="Interpolating",
                                    save_fields=False)
     # discrete sweep with fields saved so far-field quantities can be plotted against frequency
     half = max(0.03, a.bw / 1000)  # GHz
     hfss.create_linear_step_sweep(setup="Setup1", unit="GHz", start_frequency=round(a.f0 - half, 4),
                                   stop_frequency=round(a.f0 + half, 4), step_size=0.0025, name="FF",
                                   save_fields=True, sweep_type="Discrete")
-    hfss.insert_infinite_sphere(definition="Theta-Phi", x_start=-180, x_stop=180, x_step=2,
-                                y_start=0, y_stop=90, y_step=90, name="ff")
+    hfss.insert_infinite_sphere(definition="Theta-Phi", theta_start=-180, theta_stop=180, theta_step=2,
+                                phi_start=0, phi_stop=90, phi_step=90, name="ff")
     if a.board == "A":
         # ideal hybrid: equal power, J2 lags J1 by 90 deg -> RHCP
         hfss.edit_sources({"P1:1": ("1W", "0deg"), "P2:1": ("1W", "-90deg")})
-    hfss.analyze_setup("Setup1", cores=a.cores)
+    ok = hfss.analyze_setup("Setup1", cores=a.cores)
+    if not ok:
+        raise RuntimeError("HFSS solve failed (see the AEDT message log)")
 
 
 def series(sol, expr):
-    """PyAEDT has renamed these accessors across versions; try both."""
-    x = list(sol.primary_sweep_values)
-    try:
-        y = list(sol.data_real(expr))
-    except Exception:
-        y = list(sol.get_expression_data(expr)[1])
-    return x, y
+    x = [float(v) for v in sol.primary_sweep_values]
+    y = sol.get_expression_data(expr)
+    if isinstance(y, tuple):  # PyAEDT >= 1.0 returns (x, y)
+        y = y[1]
+    return x, [float(v) for v in y]
 
 
-def report(hfss, a, ports, out_dir):
+def crossings(x, y, level):
+    """x positions where y crosses `level` (linear interpolation)."""
+    out = []
+    for i in range(len(x) - 1):
+        a0, a1 = y[i] - level, y[i + 1] - level
+        if a0 == 0:
+            out.append(x[i])
+        elif a0 * a1 < 0:
+            out.append(x[i] + (x[i + 1] - x[i]) * a0 / (a0 - a1))
+    return out
+
+
+def band_below(x, y, level, around):
+    """(lo, hi) of the contiguous region around index `around` where y <= level. None at a sweep end."""
+    if y[around] > level:
+        return None, None
+    cr = crossings(x, y, level)
+    lo = max([c for c in cr if c <= x[around]], default=None)
+    hi = min([c for c in cr if c >= x[around]], default=None)
+    return lo, hi
+
+
+def report(hfss, a, ports, out_dir, elapsed):
     os.makedirs(out_dir, exist_ok=True)
     rows = {}
 
     s_exprs = [f"dB(S({p},{p}))" for p in ports] + (["dB(S(P2,P1))"] if len(ports) == 2 else [])
+    if len(ports) == 2:
+        # what the hybrid's input sees with J2 lagging by 90 deg: active reflection at J1
+        s_exprs.append("dB(ActiveS(P1:1))")
     sol = hfss.post.get_solution_data(expressions=s_exprs, setup_sweep_name="Setup1 : S")
+    if not sol:
+        s_exprs = [e for e in s_exprs if "Active" not in e]
+        sol = hfss.post.get_solution_data(expressions=s_exprs, setup_sweep_name="Setup1 : S")
     for e in s_exprs:
         rows[e] = series(sol, e)
 
-    ff_exprs = ["dB(RealizedGainRHCP)", "dB(RealizedGainLHCP)", "dB(AxialRatioValue)"]
+    ff_exprs = ["dB(RealizedGainRHCP)", "dB(RealizedGainLHCP)", "dB(AxialRatioValue)",
+                "dB(RealizedGainTotal)", "dB(GainTotal)", "dB(DirTotal)"]
     sol = hfss.post.get_solution_data(expressions=ff_exprs, setup_sweep_name="Setup1 : FF",
                                       report_category="Far Fields", context="ff",
                                       primary_sweep_variable="Freq",
@@ -196,11 +294,12 @@ def report(hfss, a, ports, out_dir):
 
     cuts = {}
     for phi in ("0deg", "90deg"):
-        sol = hfss.post.get_solution_data(expressions=["dB(RealizedGainRHCP)"], setup_sweep_name="Setup1 : FF",
+        sol = hfss.post.get_solution_data(expressions=["dB(RealizedGainRHCP)", "dB(RealizedGainTotal)"],
+                                          setup_sweep_name="Setup1 : FF",
                                           report_category="Far Fields", context="ff",
                                           primary_sweep_variable="Theta",
                                           variations={"Theta": ["All"], "Phi": [phi], "Freq": [f"{a.f0}GHz"]})
-        cuts[phi] = series(sol, "dB(RealizedGainRHCP)")
+        cuts[phi] = (series(sol, "dB(RealizedGainRHCP)"), series(sol, "dB(RealizedGainTotal)"))
 
     # ---- write CSVs
     with open(os.path.join(out_dir, "sparams.csv"), "w", newline="") as fh:
@@ -215,35 +314,113 @@ def report(hfss, a, ports, out_dir):
         f = ff[ff_exprs[0]][0]
         for i in range(len(f)):
             w.writerow([f[i]] + [ff[e][1][i] for e in ff_exprs])
+    with open(os.path.join(out_dir, "pattern_f0.csv"), "w", newline="") as fh:
+        w = csv.writer(fh)
+        w.writerow(["theta_deg", "RHCP_phi0_dBic", "total_phi0_dBi", "RHCP_phi90_dBic", "total_phi90_dBi"])
+        th = cuts["0deg"][0][0]
+        for i in range(len(th)):
+            w.writerow([th[i], cuts["0deg"][0][1][i], cuts["0deg"][1][1][i],
+                        cuts["90deg"][0][1][i], cuts["90deg"][1][1][i]])
 
     # ---- summary against requirements
     lo, hi = a.f0 - a.bw / 2000, a.f0 + a.bw / 2000
+    eps = 1e-6
+    # the reflection that matters: S11 for one port, the active reflection for board A if available
+    match_expr = "dB(ActiveS(P1:1))" if "dB(ActiveS(P1:1))" in rows else s_exprs[0]
     fs, s11 = rows[s_exprs[0]]
-    band = [s for fq, s in zip(fs, s11) if lo <= fq <= hi]
+    band = [s for fq, s in zip(fs, s11) if lo - eps <= fq <= hi + eps]
     i_min = min(range(len(s11)), key=lambda i: s11[i])
+    b_lo, b_hi = band_below(fs, s11, -10.0, i_min)
     fA, ar = ff["dB(AxialRatioValue)"]
-    ar_band = [v for fq, v in zip(fA, ar) if lo <= fq <= hi]
+    ar_band = [v for fq, v in zip(fA, ar) if lo - eps <= fq <= hi + eps]
+    i_ar = min(range(len(ar)), key=lambda i: ar[i])
+    ar_lo, ar_hi = band_below(fA, ar, 3.0, i_ar)
     fG, g = ff["dB(RealizedGainRHCP)"]
-    g_band = [v for fq, v in zip(fG, g) if lo <= fq <= hi]
-    fL, gl = ff["dB(RealizedGainLHCP)"]
+    g_band = [v for fq, v in zip(fG, g) if lo - eps <= fq <= hi + eps]
+    gl = ff["dB(RealizedGainLHCP)"][1]
+    gt = ff["dB(RealizedGainTotal)"][1]
+    i0 = min(range(len(fG)), key=lambda i: abs(fG[i] - a.f0))
+    eff = 10 ** ((ff["dB(GainTotal)"][1][i0] - ff["dB(DirTotal)"][1][i0]) / 10)
 
     def hpbw(theta, gain):
         pk = max(gain)
-        inside = [t for t, gg in zip(theta, gain) if gg >= pk - 3]
-        return max(inside) - min(inside) if inside else float("nan")
+        cr = crossings(theta, gain, pk - 3)
+        ipk = gain.index(pk)
+        left = max([c for c in cr if c <= theta[ipk]], default=float("nan"))
+        right = min([c for c in cr if c >= theta[ipk]], default=float("nan"))
+        return right - left
+
+    circular = a.board != "plain"
+    pat = 0 if circular else 1   # plain patch is linear: use total gain for the beamwidth
+    summ = {
+        "design": design_name(a),
+        "s11_min_dB": round(s11[i_min], 2),
+        "s11_min_freq_GHz": round(fs[i_min], 4),
+        "s11_worst_in_band_dB": round(max(band), 2),
+        "s11_10dB_band_MHz": round((b_hi - b_lo) * 1e3, 1) if b_lo and b_hi else None,
+        "s11_10dB_band_edges_GHz": [round(b_lo, 4) if b_lo else None, round(b_hi, 4) if b_hi else None],
+        "axial_ratio_min_dB": round(ar[i_ar], 2),
+        "axial_ratio_min_freq_GHz": round(fA[i_ar], 4),
+        "axial_ratio_at_f0_dB": round(ar[i0], 2),
+        "axial_ratio_worst_in_band_dB": round(max(ar_band), 2),
+        "axial_ratio_3dB_band_MHz": round((ar_hi - ar_lo) * 1e3, 1) if ar_lo and ar_hi else None,
+        "rhcp_gain_at_f0_dBic": round(g[i0], 2),
+        "rhcp_gain_min_in_band_dBic": round(min(g_band), 2),
+        "rhcp_gain_max_in_band_dBic": round(max(g_band), 2),
+        "realized_gain_total_at_f0_dBi": round(gt[i0], 2),
+        "realized_gain_total_max_dBi": round(max(gt), 2),
+        "directivity_at_f0_dBi": round(ff["dB(DirTotal)"][1][i0], 2),
+        "radiation_efficiency_at_f0": round(eff, 3),
+        "hpbw_deg_phi0_phi90": [round(hpbw(*cuts["0deg"][pat]), 1), round(hpbw(*cuts["90deg"][pat]), 1)],
+        "rhcp_minus_lhcp_at_f0_dB": round(g[i0] - gl[i0], 1),
+        "hand": "RHCP" if g[i0] > gl[i0] else "LHCP",
+        "solve_minutes": round(elapsed / 60, 1),
+        "options": {k: v for k, v in vars(a).items() if k not in ("project_dir", "out")},
+    }
+    if len(ports) == 2:
+        fs2, s21 = rows["dB(S(P2,P1))"]
+        k = min(range(len(fs2)), key=lambda i: abs(fs2[i] - a.f0))
+        summ["isolation_s21_at_f0_dB"] = round(s21[k], 1)
+        if match_expr != s_exprs[0]:
+            act = rows[match_expr][1]
+            summ["active_s11_worst_in_band_dB"] = round(
+                max(s for fq, s in zip(fs, act) if lo - eps <= fq <= hi + eps), 2)
+    try:  # mesh size and convergence, if this AEDT version exports it
+        conv = os.path.join(out_dir, "convergence.txt")
+        hfss.odesign.ExportConvergence("Setup1", "", conv, True)
+        txt = open(conv, errors="ignore").read()
+        nums = [ln.split("|") for ln in txt.splitlines() if "|" in ln and ln.strip()[:1].isdigit()]
+        if nums:
+            last = [c.strip() for c in nums[-1]]
+            summ["adaptive_passes"] = int(last[0])
+            summ["tetrahedra"] = int(last[1])
+            summ["final_delta_s"] = float(last[2]) if len(last) > 2 and last[2] not in ("", "N/A") else None
+    except Exception as e:
+        print("convergence export skipped:", e)
+
+    with open(os.path.join(out_dir, "summary.json"), "w") as fh:
+        json.dump(summ, fh, indent=1)
 
     lines = [
         f"design: {design_name(a)}",
         f"S11 minimum: {s11[i_min]:.1f} dB at {fs[i_min]:.4f} GHz",
         f"worst S11 in {lo:.3f}-{hi:.3f} GHz: {max(band):.1f} dB (need <= {REQ['s11_db']})",
+        f"-10 dB bandwidth: {summ['s11_10dB_band_MHz']} MHz",
+        f"axial ratio minimum: {ar[i_ar]:.2f} dB at {fA[i_ar]:.4f} GHz; 3 dB bandwidth {summ['axial_ratio_3dB_band_MHz']} MHz",
         f"worst axial ratio in band: {max(ar_band):.2f} dB (need <= {REQ['ar_db']})",
-        f"min RHCP realized gain in band: {min(g_band):.2f} dBic (need >= {REQ['gain_dbic']})",
-        f"RHCP minus LHCP at f0: {g[len(g) // 2] - gl[len(gl) // 2]:.1f} dB (positive = RHCP, as intended)",
-        f"HPBW phi=0: {hpbw(*cuts['0deg']):.0f} deg, phi=90: {hpbw(*cuts['90deg']):.0f} deg (need >= {REQ['hpbw_deg']})",
+        f"RHCP realized gain in band: {min(g_band):.2f} to {max(g_band):.2f} dBic (need >= {REQ['gain_dbic']})",
+        f"total realized gain at f0: {gt[i0]:.2f} dBi; directivity {summ['directivity_at_f0_dBi']} dBi; "
+        f"radiation efficiency {eff * 100:.0f} %",
+        f"RHCP minus LHCP at f0: {g[i0] - gl[i0]:.1f} dB -> {summ['hand']}",
+        f"HPBW phi=0: {summ['hpbw_deg_phi0_phi90'][0]:.0f} deg, phi=90: {summ['hpbw_deg_phi0_phi90'][1]:.0f} deg "
+        f"(need >= {REQ['hpbw_deg']})",
     ]
-    if len(ports) == 2:
-        fs2, s21 = rows["dB(S(P2,P1))"]
-        lines.append(f"port isolation S21 at f0: {s21[min(range(len(fs2)), key=lambda i: abs(fs2[i] - a.f0))]:.1f} dB")
+    if "isolation_s21_at_f0_dB" in summ:
+        lines.append(f"port isolation S21 at f0: {summ['isolation_s21_at_f0_dB']} dB")
+    if "tetrahedra" in summ:
+        lines.append(f"mesh: {summ['tetrahedra']} tetrahedra after {summ['adaptive_passes']} passes, "
+                     f"delta S {summ.get('final_delta_s')}")
+    lines.append(f"solve time: {elapsed / 60:.1f} min")
     text = "\n".join(lines)
     with open(os.path.join(out_dir, "summary.txt"), "w") as fh:
         fh.write(text + "\n")
@@ -253,7 +430,7 @@ def report(hfss, a, ports, out_dir):
         import matplotlib
         matplotlib.use("Agg")
         import matplotlib.pyplot as plt
-        fig, ax = plt.subplots(1, 3, figsize=(15, 4))
+        fig, ax = plt.subplots(1, 4, figsize=(20, 4))
         for e in s_exprs:
             ax[0].plot(*rows[e], label=e)
         ax[0].axhline(-10, ls="--", c="k", lw=0.8)
@@ -263,30 +440,62 @@ def report(hfss, a, ports, out_dir):
         ax[1].plot(fA, ar)
         ax[1].axhline(3, ls="--", c="k", lw=0.8)
         ax[1].axvspan(lo, hi, alpha=0.1)
-        ax[1].set(xlabel="GHz", ylabel="dB", title="Axial ratio at boresight")
-        for phi, (t, gg) in cuts.items():
-            ax[2].plot(t, gg, label=f"phi={phi}")
-        ax[2].set(xlabel="theta (deg)", ylabel="dBic", title=f"RHCP realized gain at {a.f0} GHz")
+        ax[1].set(xlabel="GHz", ylabel="dB", title="Axial ratio at boresight", ylim=(0, max(10, min(40, max(ar)))))
+        ax[2].plot(fG, g, label="RHCP")
+        ax[2].plot(fG, gt, label="total")
+        ax[2].axvspan(lo, hi, alpha=0.1)
+        ax[2].set(xlabel="GHz", ylabel="dBi(c)", title="Realized gain at boresight")
         ax[2].legend()
+        for phi, c in cuts.items():
+            ax[3].plot(*c[pat], label=f"phi={phi}")
+        ax[3].set(xlabel="theta (deg)", ylabel="dBi(c)", ylim=(-30, 10),
+                  title=f"{'RHCP' if circular else 'Total'} realized gain at {a.f0} GHz")
+        ax[3].legend()
+        fig.suptitle(design_name(a) + " (HFSS)")
         fig.tight_layout()
-        fig.savefig(os.path.join(out_dir, "results.png"), dpi=120)
+        fig.savefig(os.path.join(out_dir, "results.png"), dpi=110)
     except Exception as e:  # plots are a convenience
         print("plotting skipped:", e)
 
 
 def main():
     a = parse()
+    if a.box and a.sma:
+        raise SystemExit("--box and --sma are not supported together")
+    if not any(k.startswith("ANSYSEM") and "ROOT" in k for k in os.environ):
+        # a shell opened before AEDT was installed doesn't have its variables yet: read them from the registry
+        try:
+            import winreg
+            with winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE,
+                                r"SYSTEM\CurrentControlSet\Control\Session Manager\Environment") as key:
+                for i in range(winreg.QueryInfoKey(key)[1]):
+                    k, v, _ = winreg.EnumValue(key, i)
+                    if k.startswith("ANSYSEM") and "ROOT" in k:
+                        os.environ[k] = v
+        except Exception as e:
+            print("could not read the AEDT install path from the registry:", e)
     from ansys.aedt.core import Hfss  # imported late so --help works without AEDT
 
-    hfss = Hfss(project=a.project, design=aedt_name(a), solution_type="Modal", version=a.version,
-                non_graphical=a.non_graphical, new_desktop=True, student_version=True)
+    os.makedirs(a.project_dir, exist_ok=True)
+    project = os.path.join(a.project_dir, aedt_name(a) + ".aedt")
+    for stale in (project, project + ".lock"):
+        if os.path.exists(stale):
+            os.remove(stale)
+    hfss = Hfss(project=project, design=aedt_name(a), solution_type="Modal", version=a.version,
+                non_graphical=not a.graphical, new_desktop=True, student_version=True)
     try:
+        if a.sma:
+            mp = hfss.materials.add_material("sma_ptfe")
+            mp.permittivity = SMA_ER
+            mp.dielectric_loss_tangent = 0.0004
         ports = build(hfss, a)
+        hfss.save_project()
+        t0 = time.time()
         solve(hfss, a, ports)
-        report(hfss, a, ports, os.path.join(os.path.dirname(a.project), "results_hfss", design_name(a)))
+        report(hfss, a, ports, os.path.join(a.out, design_name(a)), time.time() - t0)
         hfss.save_project()
     finally:
-        hfss.release_desktop(close_projects=False, close_desktop=a.non_graphical)
+        hfss.release_desktop(close_projects=True, close_desktop=True)
 
 
 if __name__ == "__main__":
