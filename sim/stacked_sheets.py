@@ -1,6 +1,7 @@
 """One four-plot sheet per stacked antenna, from the HFSS results already in results_hfss/.
 
-  python sim/stacked_sheets.py      ->  docs/stacked_cut_corner_results.png, docs/stacked_dual_feed_results.png
+  python sim/stacked_sheets.py      ->  docs/stacked_cut_corner_results.png, docs/stacked_cut_corner_3mm_results.png,
+                                        docs/stacked_dual_feed_results.png
 """
 import csv
 import json
@@ -17,8 +18,10 @@ F0, LO, HI = 2.425, 2.415, 2.435
 HYBRID_LOSS = 0.4
 
 SHEETS = [
-    ("S_L36.26_f15.96_c6.56_fy3.07_U42.97_uc7.80_g5.00_er2.55_h1.52_Gm100_mesh40k", "Stacked cut corner",
+    ("S_L36.26_f15.96_c6.56_fy3.07_U42.97_uc7.80_g5.00_er2.55_h1.52_Gm100_mesh40k", "Stacked cut corner, 5 mm gap (8 mm tall)",
      "stacked_cut_corner_results.png", False),
+    ("S_L35.63_f15.68_c5.40_fy3.02_U42.23_uc6.42_g3.00_er2.55_h1.52_Gm100_mesh40k", "Stacked cut corner, 3 mm gap (6 mm tall)",
+     "stacked_cut_corner_3mm_results.png", False),
     ("SD_L35.04_f13.35_U41.51_uc0.00_g5.00_er2.55_h1.52_Gm100_mesh40k", "Stacked dual feed",
      "stacked_dual_feed_results.png", True),
 ]

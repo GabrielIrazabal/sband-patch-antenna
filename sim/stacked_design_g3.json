@@ -1,0 +1,6 @@
+{
+ "note": "Stacked cut corner re-tuned for a 3.0 mm air gap (about 6.0 mm total height). HFSS, about 40k mesh, 60 mm board on the 100 mm face.",
+ "L": 35.63, "L2": 42.23, "cut": 5.40, "cut2": 6.42, "feed": 15.68, "feed_y": 3.02, "gap": 3.0,
+ "ar_bw": 35.0, "s11_bw": 146.0, "dir": 8.70,
+ "hfss_run": "S_L35.63_f15.68_c5.40_fy3.02_U42.23_uc6.42_g3.00_er2.55_h1.52_Gm100_mesh40k"
+}
