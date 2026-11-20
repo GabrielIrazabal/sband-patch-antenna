@@ -109,7 +109,28 @@ PENDING_BARE
 
 ## 5. Stress tests on the stacked cut corner
 
-PENDING_STRESS
+Each row changes one thing on the tuned stacked cut corner (60 mm board on the 100 mm face) and re-solves it.
+
+| Case | Worst S11 | Worst axial ratio in channel | Best axial ratio at | RHCP gain in channel | All pass |
+| --- | --- | --- | --- | --- | --- |
+| Nominal | −12.7 dB | 1.39 dB | 2.425 GHz | 8.49 to 8.56 dBic | yes |
+| Board Dk 2.52 (−1.2 %) | −12.6 dB | 2.70 dB | 2.435 GHz | 8.42 to 8.53 dBic | yes |
+| Board Dk 2.58 (+1.2 %) | −13.0 dB | 2.20 dB | 2.415 GHz | 8.52 to 8.54 dBic | yes |
+| Both patches 0.3 mm small | −12.8 dB | 3.62 dB | 2.445 GHz | 8.36 to 8.51 dBic | no |
+| Both patches 0.3 mm large | −13.2 dB | 3.18 dB | 2.410 GHz | 8.48 to 8.53 dBic | no |
+| Air gap 4.8 mm (−0.2 mm) | −12.8 dB | 1.41 dB | 2.425 GHz | 8.46 to 8.53 dBic | yes |
+| Air gap 5.2 mm (+0.2 mm) | −12.5 dB | 1.56 dB | 2.425 GHz | 8.48 to 8.55 dBic | yes |
+| Upper board 0.5 mm off in x and y | −12.6 dB | 1.40 dB | 2.425 GHz | 8.48 to 8.54 dBic | yes |
+| Nylon spacers, steel screws, SMA, solder mask, metal box | not finished (see the note below) | | | | |
+
+The PC restarted for a Windows update at 5:43 am on 20 November and stopped the queue during the nylon-spacer run. The remaining rows were restarted at 7:07 am.
+
+What the tests show:
+
+- **The gap and the alignment of the upper board are not critical.** A 0.2 mm gap error or a 0.5 mm sideways error changes the axial ratio by less than 0.2 dB and the gain by less than 0.03 dB. Ordinary spacers and screw-hole tolerances are good enough.
+- **Gain and match hold in every case.** Gain stays above 8.36 dBic and worst S11 between −12.5 and −13.2 dB.
+- **Polarization is the weak point, as on the single cut corner, but with three times the margin.** A ±1.2 % Dk error still passes (2.70 dB worst). A 0.3 mm error on both patches at once does not (3.18 to 3.62 dB), because it moves the best-polarization frequency by 15 to 20 MHz. JLC's etch tolerance is usually better than 0.3 mm, and ordering ±0.3 mm size variants covers the rest.
+- For comparison, the single cut corner's axial ratio is 4.14 dB at nominal and reaches 8.4 to 8.7 dB with the same 1.2 % Dk error (see [`HFSS_RESULTS.md`](HFSS_RESULTS.md)).
 
 ## 6. Hand calculations
 

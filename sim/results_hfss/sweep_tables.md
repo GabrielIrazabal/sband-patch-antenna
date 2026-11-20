@@ -21,9 +21,9 @@
 | Board Dk 2.58 (+1.2 %) | -13.0 dB | 0.30 dB at 2.4150 GHz | 2.20 dB | 49.2 MHz | 8.52 to 8.54 dBic | yes |
 | Both patches 0.3 mm small | -12.8 dB | 0.53 dB at 2.4450 GHz | 3.62 dB | 49.7 MHz | 8.36 to 8.51 dBic | no |
 | Both patches 0.3 mm large | -13.2 dB | 0.31 dB at 2.4100 GHz | 3.18 dB | 48.9 MHz | 8.48 to 8.53 dBic | no |
-| Air gap 4.8 mm (-0.2) | not run | | | | | |
-| Air gap 5.2 mm (+0.2) | not run | | | | | |
-| Upper board 0.5 mm off in x and y | not run | | | | | |
+| Air gap 4.8 mm (-0.2) | -12.8 dB | 0.19 dB at 2.4250 GHz | 1.41 dB | 48.8 MHz | 8.46 to 8.53 dBic | yes |
+| Air gap 5.2 mm (+0.2) | -12.5 dB | 0.72 dB at 2.4250 GHz | 1.56 dB | 49.3 MHz | 8.48 to 8.55 dBic | yes |
+| Upper board 0.5 mm off in x and y | -12.6 dB | 0.39 dB at 2.4250 GHz | 1.40 dB | 49.5 MHz | 8.48 to 8.54 dBic | yes |
 | SMA connector modelled | not run | | | | | |
 | Solder mask around the lower patch | not run | | | | | |
 | Metal box behind, not a flat plate | not run | | | | | |
