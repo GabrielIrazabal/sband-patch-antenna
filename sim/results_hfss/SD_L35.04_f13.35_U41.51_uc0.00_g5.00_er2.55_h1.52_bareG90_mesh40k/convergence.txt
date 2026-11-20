@@ -1,0 +1,30 @@
+Setup : Setup1
+
+==================
+Number of Passes
+Completed : 13
+Maximum   : 13
+Minimum   : 1
+==================
+Criterion : Max Mag. Delta S
+Target    : 1e-05
+Current   : 0.010673
+Target Consecutive Passes  : 2
+Current Consecutive Passes : 0
+Converged : No
+==================
+Pass Number|Solved Elements|Max Mag. Delta S|
+          1|           2364|             N/A|
+          2|           3078|         0.25455|
+          3|           4004|         0.22674|
+          4|           5212|         0.16622|
+          5|           6781|         0.11809|
+          6|           8817|        0.072654|
+          7|          11463|        0.044657|
+          8|          14910|        0.032044|
+          9|          19125|        0.028005|
+         10|          24856|        0.023522|
+         11|          31822|        0.020198|
+         12|          36227|        0.011881|
+         13|          46738|        0.010673|
+
