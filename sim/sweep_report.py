@@ -120,7 +120,7 @@ def compare_plot():
     ax[1, 1].grid(alpha=0.3)
     for a in ax.flat:
         a.legend(fontsize=9)
-    fig.suptitle("Three tuned antennas on the 100 mm metal face (HFSS, about 40,000-element mesh)", fontsize=13, weight="bold")
+    fig.suptitle("Four tuned antennas on the 100 mm metal face (HFSS, about 40,000-element mesh)", fontsize=13, weight="bold")
     fig.tight_layout()
     fig.savefig(os.path.join(RES, "compare_three.png"), dpi=120)
     plt.close(fig)
@@ -140,13 +140,15 @@ def sweep_plot(data, bare, path):
     panels = [("g_lo", "Lowest RHCP gain in the channel (dBic)", 6.5, "higher is better"),
               ("ar", "Worst axial ratio in the channel (dB)", 3.0, "lower is better"),
               ("s11", "Worst S11 in the channel (dB)", -10.0, "lower is better"),
-              ("ar_f", "Frequency of best axial ratio (GHz)", F0, "should stay at 2.425"),
+              ("ar_f", "Frequency of best axial ratio (GHz), cut-corner designs", F0, "should stay at 2.425"),
               ("dir", "Directivity at 2.425 GHz (dBi)", None, ""),
               ("hp", "Half-power beamwidth, narrower cut (deg)", 60.0, "need 60 or wider")]
     fig, ax = plt.subplots(2, 3, figsize=(17, 9))
     for a, (key, title, line, note) in zip(ax.flat, panels):
         for k in KEYS:
             gs = sorted(data[k])
+            if key == "ar_f" and k in ("A", "SD"):
+                continue        # a dual feed's axial ratio is flat, so its "best" frequency means nothing
             if gs:
                 a.plot(gs, [data[k][g][key] for g in gs], "o-", color=COLOR[k], label=LABEL[k])
         if line is not None:
@@ -208,7 +210,7 @@ def stress_table():
 
 
 def main():
-    out = ["## Three tuned antennas, 60 mm board on the 100 mm face", "",
+    out = ["## Four tuned antennas, 60 mm board on the 100 mm face", "",
            "| | " + " | ".join(LABEL[k] for k in KEYS) + " | Requirement |", "| --- |" + " --- |" * (len(KEYS) + 1)]
     ms = {k: metrics(k, load(folder(k, 60))) for k in KEYS}
     rows = [("Worst S11 in the channel", "s11", "dB", 1, "-10 dB or lower"), ("-10 dB match window", "bw", "MHz", 0, "covers the channel"),
