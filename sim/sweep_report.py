@@ -147,7 +147,7 @@ def sweep_plot(data, bare, path):
     for a, (key, title, line, note) in zip(ax.flat, panels):
         for k in KEYS:
             gs = sorted(data[k])
-            if key == "ar_f" and k in ("A", "SD"):
+            if key == "ar_f" and k in ("A", "D"):
                 continue        # a dual feed's axial ratio is flat, so its "best" frequency means nothing
             if gs:
                 a.plot(gs, [data[k][g][key] for g in gs], "o-", color=COLOR[k], label=LABEL[k])

@@ -83,23 +83,27 @@
 
 | Board side | Worst S11 | Worst axial ratio | Best axial ratio at | 3 dB AR window | RHCP gain in channel | Directivity | Efficiency | Beamwidth | All pass |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 50 mm | -15.2 dB | 6.71 dB | 1.42 dB at 2.4150 GHz | 15.8 MHz | 5.78 to 6.14 dBic | 6.81 dBi | 90 % | 91 deg | no |
 | 100 mm | -15.6 dB | 4.00 dB | 0.31 dB at 2.4250 GHz | 16.0 MHz | 7.00 to 7.17 dBic | 7.89 dBi | 87 % | 73 deg | no |
 
 **Dual feed** (typical coupler, 0.4 dB coupler loss included)
 
 | Board side | Worst S11 | Worst axial ratio | Best axial ratio at | 3 dB AR window | RHCP gain in channel | Directivity | Efficiency | Beamwidth | All pass |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 50 mm | -9.6 dB | 0.76 dB | 0.07 dB at 2.4100 GHz | n/a MHz | 5.47 to 5.91 dBic | 6.82 dBi | 89 % | 90 deg | no |
 | 100 mm | -13.1 dB | 0.76 dB | 0.08 dB at 2.4300 GHz | n/a MHz | 6.68 to 6.86 dBic | 7.88 dBi | 87 % | 73 deg | yes |
 
 **Stacked cut corner**
 
 | Board side | Worst S11 | Worst axial ratio | Best axial ratio at | 3 dB AR window | RHCP gain in channel | Directivity | Efficiency | Beamwidth | All pass |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 50 mm | -13.8 dB | 5.94 dB | 4.21 dB at 2.4400 GHz | n/a MHz | 6.57 to 6.93 dBic | 7.50 dBi | 94 % | 76 deg | no |
 | 100 mm | -12.3 dB | 1.84 dB | 0.75 dB at 2.4200 GHz | 49.5 MHz | 8.39 to 8.42 dBic | 8.78 dBi | 98 % | 66 deg | yes |
 
 **Stacked dual feed** (typical coupler, 0.4 dB coupler loss included)
 
 | Board side | Worst S11 | Worst axial ratio | Best axial ratio at | 3 dB AR window | RHCP gain in channel | Directivity | Efficiency | Beamwidth | All pass |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 50 mm | -7.7 dB | 1.21 dB | 0.50 dB at 2.4100 GHz | n/a MHz | 5.95 to 6.29 dBic | 7.53 dBi | 94 % | 78 deg | no |
 | 100 mm | -16.4 dB | 1.52 dB | 0.77 dB at 2.3800 GHz | n/a MHz | 8.18 to 8.22 dBic | 8.75 dBi | 98 % | 67 deg | yes |
 
