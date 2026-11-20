@@ -207,6 +207,45 @@ def stacked(out, q_single, S):
             "The stack is more directive because most of its field is in air, so the radiating patch is physically larger.", ""]
 
 
+def stacked_dual(out, S, D):
+    """Stacked dual feed: sizes and feed position predicted by hand from the uncut reference pair, then HFSS."""
+    lin = S["linear"]
+    flo = lin["dips"][0]
+    q = flo * 1e3 / (math.sqrt(2) * lin["bw10"])
+    scale = flo / (F0 / 1e9)                       # resonance scales inversely with size
+    mesh = 1.007                                   # the 40,000-element mesh reads 0.7 % higher than the tuning mesh
+    L1, L2 = lin["L"] * scale * mesh, lin["L2"] * scale * mesh
+    r_edge = lin["r_res"] / math.sin(math.pi * lin["feed"] / lin["L"]) ** 2
+    feed = L1 / math.pi * math.asin(math.sqrt(min(1.0, 50.0 / r_edge)))
+    h2 = H + S["gap"] * 1e-3
+    er2 = h2 / (H / ER + S["gap"] * 1e-3)
+    q_up = jackson(F0, er2, 0.0005, h2, L2 * 1e-3)["Q"]
+    j = summary(D.get("hfss_run", "")) or {}
+    hy = {(x["amplitude_dB"], x["phase_deg"]): x["axial_ratio_worst_in_band_dB"] for x in j.get("hybrid_imbalance", [])}
+    out += ["## 3. Stacked dual feed", "",
+            "Same two boards as the stacked patch, but square patches with no corner cuts and two feeds on the "
+            "lower patch, driven 90 degrees apart by a coupler (as on the single dual feed).", "",
+            f"Hand steps: (1) the uncut reference pair ({lin['L']:.2f} / {lin['L2']:.2f} mm) resonates at {flo:.3f} GHz in HFSS, "
+            f"so scale both patches by {scale:.4f} for 2.425 GHz, and by {mesh} more because the fine mesh reads 0.7 % "
+            f"higher than the mesh that pair was solved on. (2) That pair showed {lin['r_res']:.1f} ohm at resonance with the "
+            f"feed {lin['feed']:.1f} mm from the centre; R = R_edge sin^2(pi d / L) gives R_edge = {r_edge:.1f} ohm and the "
+            "50 ohm point. (3) Bandwidth from Q; axial ratio from the coupler error formula, which does not depend on "
+            "the patch.", "",
+            f"The stack's Q of {q:.1f} lies between the Jackson value for the upper patch alone on its air substrate "
+            f"({q_up:.1f}) and for the lower patch alone on PTFE (53.5), as it should for a coupled pair.", "",
+            "| Quantity | Hand calculation | HFSS (tuned design) | Difference |", "| --- | --- | --- | --- |",
+            row("Lower patch side", L1, D.get("L"), "mm"),
+            row("Upper patch side", L2, D.get("L2"), "mm"),
+            row("Feed offset for 50 ohm", feed, D.get("feed"), "mm"),
+            row("Match bandwidth, 1/(sqrt2 Q)", F0 / 1e6 / (math.sqrt(2) * q), j.get("s11_10dB_band_MHz"), "MHz", "{:.0f}"),
+            row("Axial ratio, coupler off by 0.5 dB and 3 deg", ar_from_errors(0.5, 3), hy.get((0.5, 3.0)), "dB"),
+            row("Axial ratio, coupler off by 1 dB and 5 deg", ar_from_errors(1.0, 5), hy.get((1.0, 5.0)), "dB"),
+            row("Axial ratio, coupler off by 1 dB and 10 deg", ar_from_errors(1.0, 10), hy.get((1.0, 10.0)), "dB"),
+            row("Gain at the patch = stacked directivity x efficiency", S.get("dir", 8.87) + 10 * math.log10(0.977),
+                j.get("rhcp_gain_at_f0_dBic"), "dBic"),
+            ""]
+
+
 def main(S=None):
     out = ["# Hand calculations against HFSS", "",
            "Closed-form textbook models, used as a check that the simulated designs are where theory says they "
@@ -218,6 +257,9 @@ def main(S=None):
         S = json.load(open(sp))
     if S:
         stacked(out, q, S)
+        dp = os.path.join(HERE, "stacked_dual_design.json")
+        if os.path.exists(dp):
+            stacked_dual(out, S, json.load(open(dp)))
     text = "\n".join(out)
     print(text)
     with open(os.path.join(HERE, "HAND_CALCS.md"), "w", encoding="utf-8") as fh:

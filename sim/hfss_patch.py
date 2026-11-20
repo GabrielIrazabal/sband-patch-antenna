@@ -18,6 +18,8 @@ Usage (Windows, AEDT Student installed, `pip install -r requirements.txt`):
   # stacked patch: board B's fed patch plus a second, unconnected patch on a second board above it
   python hfss_patch.py --board S --L 37.0 --feed 7.0 --cut 5.0 --L2 46.0 --cut2 6.0 --gap 4.0       --er 2.55 --tand 0.0018 --Gm 100 --ff_half 125 --ff_step 5 --s_lo 2.1 --s_hi 2.8
 
+Board SD is board S with two feeds and no corner cuts (a stacked dual feed, driven like board A).
+
 Board S (stacked): the lower board is board B. The upper board (same laminate, thickness --h2) sits
 --gap mm above it. Its patch (side --L2, corner cuts --cut2, same two corners as the lower patch) is
 on the underside, facing the lower patch (--up-side bottom, the default), or on the top (--up-side
@@ -99,7 +101,7 @@ HYBRID_CASES = [(0.5, 3.0), (1.0, 5.0), (1.0, 10.0)]
 
 def parse():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--board", choices=["plain", "A", "B", "S"], required=True)
+    ap.add_argument("--board", choices=["plain", "A", "B", "S", "SD"], required=True)
     for k, val in DEFAULTS.items():
         ap.add_argument(f"--{k}", type=float, default=val)
     ap.add_argument("--version", default=None, help='AEDT version, e.g. "2025.2"; default = newest installed')
@@ -132,7 +134,7 @@ def design_name(a):
     name = f"{a.board}_L{a.L:.2f}_f{a.feed:.2f}" + (f"_c{a.cut:.2f}" if a.board in ("B", "S") else "")
     if a.feed_y and a.board in ("B", "S"):
         name += f"_fy{a.feed_y:.2f}"
-    if a.board == "S":
+    if a.board in ("S", "SD"):
         name += f"_U{a.L2:.2f}_uc{a.cut2:.2f}_g{a.gap:.2f}" + ("_top" if a.up_side == "top" else "")
     name += f"_er{a.er:.2f}_h{a.h:.2f}"
     if a.Gm > a.G:
@@ -163,7 +165,7 @@ def build(hfss, a):
 
     # feed points (HFSS coordinates, see module docstring)
     feeds = [(a.feed, a.feed_y if a.board in ("B", "S") else 0.0)]
-    if a.board == "A":
+    if a.board in ("A", "SD"):
         feeds.append((0.0, a.feed))
 
     sheets = ["patch"]
@@ -197,7 +199,7 @@ def build(hfss, a):
     m.create_polyline(pts, close_surface=True, cover_surface=True, name="patch")
 
     top = h
-    if a.board == "S":
+    if a.board in ("S", "SD"):
         if a.gap <= 0 and a.up_side == "bottom":
             raise SystemExit("--gap 0 needs --up-side top (otherwise the two patches touch)")
         G2 = a.G2 if a.G2 > 0 else G
@@ -206,7 +208,7 @@ def build(hfss, a):
         m.create_box(origin=[-G2 / 2 + a.dx2, -G2 / 2 + a.dy2, zu], sizes=[G2, G2, a.h2], name="substrate2",
                      material="substrate_design")
         zp = zu if a.up_side == "bottom" else top
-        s2, c2 = a.L2 / 2, a.cut2
+        s2, c2 = a.L2 / 2, (a.cut2 if a.board == "S" else 0.0)
         if c2 > 0:
             pts2 = [[-s2 + c2, s2, zp], [s2, s2, zp], [s2, -s2 + c2, zp], [s2 - c2, -s2, zp], [-s2, -s2, zp],
                     [-s2, s2 - c2, zp]]
@@ -345,7 +347,7 @@ def solve(hfss, a, ports):
                                   save_fields=True, sweep_type="Discrete")
     hfss.insert_infinite_sphere(definition="Theta-Phi", theta_start=-180, theta_stop=180, theta_step=2,
                                 phi_start=0, phi_stop=90, phi_step=90, name="ff")
-    if a.board == "A":
+    if a.board in ("A", "SD"):
         # ideal hybrid: equal power, J2 lags J1 by 90 deg -> RHCP
         hfss.edit_sources({"P1:1": ("1W", "0deg"), "P2:1": ("1W", "-90deg")})
     ok = hfss.analyze_setup("Setup1", cores=a.cores)
@@ -519,7 +521,7 @@ def report(hfss, a, ports, out_dir, elapsed):
     except Exception as e:
         print("impedance export skipped:", e)
     hyb_lines = []
-    if a.board == "A":
+    if a.board in ("A", "SD"):
         # a real hybrid is not perfect: J2's power off by d dB and its phase off by p degrees from -90
         try:
             summ["hybrid_imbalance"] = []

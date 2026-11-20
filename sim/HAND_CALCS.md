@@ -61,3 +61,22 @@ HFSS, a pair without corner cuts (35.00 / 41.50 mm): resonances at 2.421 and 2.9
 
 Directivity of a patch on a substrate of Dk 1.17: 9.0 dBi by the same formula (single patch on PTFE: 7.1 dBi). HFSS gives 8.87 dBi for the stacked patch on the 100 mm face. The stack is more directive because most of its field is in air, so the radiating patch is physically larger.
 
+## 3. Stacked dual feed
+
+Same two boards as the stacked patch, but square patches with no corner cuts and two feeds on the lower patch, driven 90 degrees apart by a coupler (as on the single dual feed).
+
+Hand steps: (1) the uncut reference pair (35.00 / 41.50 mm) resonates at 2.421 GHz in HFSS, so scale both patches by 0.9984 for 2.425 GHz, and by 1.007 more because the fine mesh reads 0.7 % higher than the mesh that pair was solved on. (2) That pair showed 44.6 ohm at resonance with the feed 12.0 mm from the centre; R = R_edge sin^2(pi d / L) gives R_edge = 57.5 ohm and the 50 ohm point. (3) Bandwidth from Q; axial ratio from the coupler error formula, which does not depend on the patch.
+
+The stack's Q of 17.9 lies between the Jackson value for the upper patch alone on its air substrate (11.0) and for the lower patch alone on PTFE (53.5), as it should for a coupled pair.
+
+| Quantity | Hand calculation | HFSS (tuned design) | Difference |
+| --- | --- | --- | --- |
+| Lower patch side | 35.19 mm | 35.04 mm | +0.4 % |
+| Upper patch side | 41.72 mm | 41.51 mm | +0.5 % |
+| Feed offset for 50 ohm | 13.45 mm | 13.35 mm | +0.8 % |
+| Match bandwidth, 1/(sqrt2 Q) | 96 MHz | 106 MHz | -9.7 % |
+| Axial ratio, coupler off by 0.5 dB and 3 deg | 0.68 dB | 1.48 dB | -0.80 dB |
+| Axial ratio, coupler off by 1 dB and 5 deg | 1.26 dB | 2.06 dB | -0.80 dB |
+| Axial ratio, coupler off by 1 dB and 10 deg | 1.83 dB | 2.47 dB | -0.64 dB |
+| Gain at the patch = stacked directivity x efficiency | 8.77 dBic | 8.74 dBic | +0.03 dB |
+
