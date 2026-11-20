@@ -105,7 +105,56 @@ Full tables with S11, directivity, efficiency and beamwidth for every size are i
 
 ## 4. Board-size sweep, no metal behind the board
 
-PENDING_BARE
+Same sweep with the 100 mm metal face removed, so the board's own copper is the whole ground plane. The 100 mm row is the same model as the 100 mm row in section 3. No 60 or 80 mm bare boards were run.
+
+![Size sweep, bare board](results_hfss/size_sweep_bare.png)
+
+Lowest RHCP gain in the channel:
+
+| Board side | Cut corner | Dual feed | Stacked cut corner | Stacked dual feed |
+| --- | --- | --- | --- | --- |
+| 50 mm | 5.78 dBic | 5.47 dBic | 6.57 dBic | 5.95 dBic |
+| 70 mm | 6.55 dBic | 6.34 dBic | 7.82 dBic | 7.63 dBic |
+| 90 mm | 6.90 dBic | 6.61 dBic | 8.19 dBic | 8.03 dBic |
+| 100 mm | 7.00 dBic | 6.68 dBic | 8.39 dBic | 8.18 dBic |
+
+Worst axial ratio in the channel:
+
+| Board side | Cut corner | Dual feed | Stacked cut corner | Stacked dual feed |
+| --- | --- | --- | --- | --- |
+| 50 mm | 6.71 dB | 0.76 dB | 5.94 dB | 1.21 dB |
+| 70 mm | 4.04 dB | 0.76 dB | 2.21 dB | 1.50 dB |
+| 90 mm | 3.78 dB | 0.77 dB | 1.85 dB | 1.48 dB |
+| 100 mm | 4.00 dB | 0.76 dB | 1.84 dB | 1.52 dB |
+
+Worst S11 in the channel:
+
+| Board side | Cut corner | Dual feed | Stacked cut corner | Stacked dual feed |
+| --- | --- | --- | --- | --- |
+| 50 mm | −15.2 dB | −9.6 dB | −13.8 dB | −7.7 dB |
+| 70 mm | −14.4 dB | −14.0 dB | −12.1 dB | −14.5 dB |
+| 90 mm | −15.2 dB | −13.9 dB | −12.1 dB | −15.8 dB |
+| 100 mm | −15.6 dB | −13.1 dB | −12.3 dB | −16.4 dB |
+
+Half-power beamwidth (narrower cut):
+
+| Board side | Cut corner | Dual feed | Stacked cut corner | Stacked dual feed |
+| --- | --- | --- | --- | --- |
+| 50 mm | 91° | 90° | 76° | 78° |
+| 70 mm | 82° | 82° | 74° | 74° |
+| 90 mm | 75° | 75° | 69° | 69° |
+| 100 mm | 73° | 73° | 66° | 67° |
+
+What the sweep shows:
+
+- **Gain rises with ground size.** From 50 to 100 mm it rises 1.2 dB on the single patches and 1.8 to 2.2 dB on the stacked ones. About two thirds of that comes between 50 and 70 mm.
+- **The beam narrows as the ground grows**, from about 90° to 73° on the single patches and from about 77° to 66° on the stacked ones. Every case passes the 60° requirement.
+- **Directivity is the cause.** It rises from 6.8 to 7.9 dBi on the single patches and from 7.5 to 8.8 dBi on the stacked ones. Efficiency stays between 87 and 98 %.
+- **At 50 mm the designs are also detuned.** The dual feeds lose their match (−9.6 and −7.7 dB) and the cut corners lose their circular polarization (6.7 and 5.9 dB). These designs were tuned for the 100 mm face. A re-tune for a 50 mm bare board would recover match and polarization, but not the 1.1 to 1.3 dB of directivity.
+- **From 70 mm up, nothing is detuned.** Match and axial ratio are within about 0.4 dB of the 100 mm values, apart from the mesh scatter on the single cut corner.
+- **A 60 mm bare board was not run at this mesh.** By interpolation it would sit about 0.4 dB below the 70 mm gain figures.
+
+In short: with the antenna on the satellite's metal face, the board can be any size from 60 to 100 mm with almost no change. Without metal behind it, a bigger board is worth up to about 2 dB.
 
 ## 5. Stress tests on the stacked cut corner
 
@@ -121,14 +170,23 @@ Each row changes one thing on the tuned stacked cut corner (60 mm board on the 1
 | Air gap 4.8 mm (−0.2 mm) | −12.8 dB | 1.41 dB | 2.425 GHz | 8.46 to 8.53 dBic | yes |
 | Air gap 5.2 mm (+0.2 mm) | −12.5 dB | 1.56 dB | 2.425 GHz | 8.48 to 8.55 dBic | yes |
 | Upper board 0.5 mm off in x and y | −12.6 dB | 1.40 dB | 2.425 GHz | 8.48 to 8.54 dBic | yes |
-| Nylon spacers, steel screws, SMA, solder mask, metal box | not finished (see the note below) | | | | |
+| Four nylon spacers in the gap | −12.4 dB | 1.29 dB | 2.425 GHz | 8.45 to 8.51 dBic | yes |
+| Four steel screws and metal standoffs | −11.1 dB | 2.35 dB | 2.415 GHz | 8.28 to 8.31 dBic | yes |
+| SMA connector modelled | −13.6 dB | 1.36 dB | 2.425 GHz | 8.48 to 8.55 dBic | yes |
+| Solder mask around the lower patch | −12.6 dB | 1.73 dB | 2.420 GHz | 8.49 to 8.53 dBic | yes |
+| Metal box behind, not a flat plate | −12.6 dB | 1.26 dB | 2.425 GHz | 8.21 to 8.29 dBic | yes |
+| Lossless copper | −12.8 dB | 1.50 dB | 2.425 GHz | 8.52 to 8.59 dBic | yes |
 
-The PC restarted for a Windows update at 5:43 am on 20 November and stopped the queue during the nylon-spacer run. The remaining rows were restarted at 7:07 am.
+The spacers and screws sit at the four board corners, 4 mm in from each edge and clear of the upper patch.
 
 What the tests show:
 
 - **The gap and the alignment of the upper board are not critical.** A 0.2 mm gap error or a 0.5 mm sideways error changes the axial ratio by less than 0.2 dB and the gain by less than 0.03 dB. Ordinary spacers and screw-hole tolerances are good enough.
-- **Gain and match hold in every case.** Gain stays above 8.36 dBic and worst S11 between −12.5 and −13.2 dB.
+- **Nylon spacers have no measurable effect** (0.1 dB in axial ratio, 0.04 dB in gain).
+- **Steel screws with metal standoffs cost something but still pass:** axial ratio 2.35 dB instead of 1.39 dB, gain 0.2 dB lower, worst S11 −11.1 dB. Nylon hardware is the better choice. If steel is needed, the patches could be re-tuned with the screws in the model.
+- **The connector, solder mask and lossless copper change little.** Solder mask moves the best-polarization frequency 5 MHz low, against 7.5 MHz on the single cut corner.
+- **A metal box behind the board instead of a flat plate lowers gain by 0.27 dB** (8.21 to 8.29 dBic). The single cut corner lost a similar amount.
+- **Gain and match hold in every case.** Gain stays above 8.21 dBic and worst S11 between −11.1 and −13.6 dB.
 - **Polarization is the weak point, as on the single cut corner, but with three times the margin.** A ±1.2 % Dk error still passes (2.70 dB worst). A 0.3 mm error on both patches at once does not (3.18 to 3.62 dB), because it moves the best-polarization frequency by 15 to 20 MHz. JLC's etch tolerance is usually better than 0.3 mm, and ordering ±0.3 mm size variants covers the rest.
 - For comparison, the single cut corner's axial ratio is 4.14 dB at nominal and reaches 8.4 to 8.7 dB with the same 1.2 % Dk error (see [`HFSS_RESULTS.md`](HFSS_RESULTS.md)).
 
