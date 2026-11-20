@@ -246,6 +246,37 @@ def stacked_dual(out, S, D):
             ""]
 
 
+def stacked_short(out, S, G):
+    """Stacked cut corner re-tuned for a smaller gap (G). No uncut reference pair was solved at this gap, so Q
+    comes from the HFSS axial-ratio bandwidth and the check is whether the cut and the match bandwidth agree with it."""
+    gap = G["gap"] * 1e-3
+    h2 = H + gap
+    er2 = h2 / (H / ER + gap)
+    q = 0.348 * F0 / 1e6 / G["ar_bw"]
+    q5 = S["linear"]["dips"][0] * 1e3 / (math.sqrt(2) * S["linear"]["bw10"])
+    phi = math.atan2(G["feed_y"], G["feed"])
+    rho = math.cos(math.radians(45) - phi) / math.cos(math.radians(45) + phi)
+    cut = math.sqrt((rho + 1 / rho) / 2 / (2 * q))
+    jd = jackson(F0, er2, 0.0005, h2, G["L2"] * 1e-3)
+    out += [f"## 4. Stacked cut corner with a {G['gap']:.1f} mm gap", "",
+            f"Lower patch {G['L']:.2f} mm, upper patch {G['L2']:.2f} mm, {G['gap']:.1f} mm of air between the boards "
+            f"(about {(2 * H + gap) * 1e3:.1f} mm tall in total).", "",
+            f"No uncut pair was solved at this gap, so Q is taken from the HFSS axial-ratio bandwidth "
+            f"({G['ar_bw']:.1f} MHz): Q = 0.348 f / BW = {q:.1f}, against {q5:.1f} at the 5 mm gap. A smaller gap "
+            "stores more energy for the same radiated power, so Q rises and every bandwidth shrinks. The check is "
+            "whether the corner cut and the match bandwidth HFSS arrived at agree with that Q.", "",
+            "| Quantity | Hand calculation | HFSS (tuned design) | Difference |", "| --- | --- | --- | --- |",
+            row("CP match bandwidth (sqrt2/Q)", math.sqrt(2) / q * F0 / 1e6, G.get("s11_bw"), "MHz", "{:.0f}"),
+            row(f"Mode-coupling ratio for the feed {G['feed_y']:.2f} mm off the centre line", rho, None, "", "{:.2f}"),
+            row("Lower corner cut / patch side: sqrt((rho + 1/rho)/2 x 1/2Q)", cut, G["cut"] / G["L"], "", "{:.3f}"),
+            row("Upper corner cut / patch side, same formula", cut, G["cut2"] / G["L2"], "", "{:.3f}"),
+            row("Cut needed relative to the 5 mm design: sqrt(Q5/Q3)", math.sqrt(q5 / q), (G["cut"] / G["L"]) / (S["cut"] / S["L"]), "", "{:.3f}"),
+            row(f"Directivity, patch on a substrate of Dk {er2:.2f} (infinite ground)", jd["D_dBi"], G.get("dir"), "dBi"),
+            "",
+            "Polarization loss if a tolerance pushes the axial ratio past 3 dB: "
+            + ", ".join(f"{x} dB costs {pol_loss_db(x):.2f} dB" for x in (3.3, 3.6, 4.7, 5.0)) + ".", ""]
+
+
 def main(S=None):
     out = ["# Hand calculations against HFSS", "",
            "Closed-form textbook models, used as a check that the simulated designs are where theory says they "
@@ -260,6 +291,9 @@ def main(S=None):
         dp = os.path.join(HERE, "stacked_dual_design.json")
         if os.path.exists(dp):
             stacked_dual(out, S, json.load(open(dp)))
+        gp = os.path.join(HERE, "stacked_design_g3.json")
+        if os.path.exists(gp):
+            stacked_short(out, S, json.load(open(gp)))
     text = "\n".join(out)
     print(text)
     with open(os.path.join(HERE, "HAND_CALCS.md"), "w", encoding="utf-8") as fh:

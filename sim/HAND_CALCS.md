@@ -80,3 +80,20 @@ The stack's Q of 17.9 lies between the Jackson value for the upper patch alone o
 | Axial ratio, coupler off by 1 dB and 10 deg | 1.83 dB | 2.47 dB | -0.64 dB |
 | Gain at the patch = stacked directivity x efficiency | 8.77 dBic | 8.74 dBic | +0.03 dB |
 
+## 4. Stacked cut corner with a 3.0 mm gap
+
+Lower patch 35.63 mm, upper patch 42.23 mm, 3.0 mm of air between the boards (about 6.0 mm tall in total).
+
+No uncut pair was solved at this gap, so Q is taken from the HFSS axial-ratio bandwidth (35.0 MHz): Q = 0.348 f / BW = 24.1, against 17.9 at the 5 mm gap. A smaller gap stores more energy for the same radiated power, so Q rises and every bandwidth shrinks. The check is whether the corner cut and the match bandwidth HFSS arrived at agree with that Q.
+
+| Quantity | Hand calculation | HFSS (tuned design) | Difference |
+| --- | --- | --- | --- |
+| CP match bandwidth (sqrt2/Q) | 142 MHz | 146 MHz | -2.6 % |
+| Mode-coupling ratio for the feed 3.02 mm off the centre line | 1.48  |   |  |
+| Lower corner cut / patch side: sqrt((rho + 1/rho)/2 x 1/2Q) | 0.149  | 0.152  | -1.4 % |
+| Upper corner cut / patch side, same formula | 0.149  | 0.152  | -1.7 % |
+| Cut needed relative to the 5 mm design: sqrt(Q5/Q3) | 0.860  | 0.838  | +2.7 % |
+| Directivity, patch on a substrate of Dk 1.26 (infinite ground) | 8.84 dBi | 8.70 dBi | +0.14 dB |
+
+Polarization loss if a tolerance pushes the axial ratio past 3 dB: 3.3 dB costs 0.15 dB, 3.6 dB costs 0.18 dB, 4.7 dB costs 0.29 dB, 5.0 dB costs 0.33 dB.
+

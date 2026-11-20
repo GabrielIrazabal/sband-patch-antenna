@@ -8,6 +8,7 @@ All four antennas use JLC's PTFE (ZYF255DA, Dk 2.55, 1.524 mm) and are tuned for
 
 - **There are now four tuned antennas:** cut corner, dual feed, stacked cut corner and stacked dual feed. The two stacked ones are new.
 - **Stacking adds about 1.4 to 1.5 dB of gain and widens every window by about three times.** The cost is a second board held 5.0 mm above the first, which makes the antenna about 8 mm tall instead of 1.5 mm.
+- **A shorter stack works nearly as well.** Re-tuned for a 3.0 mm gap (about 6.0 mm tall), the stacked cut corner gives 8.45 to 8.51 dBic and a better match, but its polarization window is 35 MHz instead of 49 MHz, so it is more sensitive to manufacturing error. See section 6.
 - **On the stacked patch, the dual feed is not better than the cut corner.** With a typical coupler its axial ratio is about the same (1.48 against 1.39 dB), its gain is 0.2 dB lower, and it needs a coupler, a load and a second line.
 - **Board size barely changes anything when the board sits on the 100 mm metal face.** From 50 to 100 mm, gain moves by less than 0.1 dB and beamwidth by less than 1 degree for all four. The one exception is the stacked cut corner at 50 mm, where the axial ratio rises to 3.34 dB.
 - **Hand calculations agree with HFSS** within 3 % on patch size and within 10 % on bandwidth for all four. See [`HAND_CALCS.md`](HAND_CALCS.md).
@@ -61,7 +62,7 @@ What the tuning found:
 - **The feed pin's own inductance limits the match** on the cut-corner version. Moving the feed 3.07 mm sideways cancels most of it. Worst S11 is −12.7 dB, which passes with 2.7 dB to spare.
 - **The fine mesh read 17 MHz higher than the tuning mesh**, so the final dimensions were scaled by 0.7 % and re-solved.
 
-The 5.0 mm gap was chosen as a practical spacer height. It was not optimised.
+The 5.0 mm gap was chosen as a practical spacer height. Section 6 re-tunes the stacked cut corner for a 3.0 mm gap.
 
 ## 3. Board-size sweep, on the 100 mm metal face
 
@@ -190,7 +191,56 @@ What the tests show:
 - **Polarization is the weak point, as on the single cut corner, but with three times the margin.** A ±1.2 % Dk error still passes (2.70 dB worst). A 0.3 mm error on both patches at once does not (3.18 to 3.62 dB), because it moves the best-polarization frequency by 15 to 20 MHz. JLC's etch tolerance is usually better than 0.3 mm, and ordering ±0.3 mm size variants covers the rest.
 - For comparison, the single cut corner's axial ratio is 4.14 dB at nominal and reaches 8.4 to 8.7 dB with the same 1.2 % Dk error (see [`HFSS_RESULTS.md`](HFSS_RESULTS.md)).
 
-## 6. Hand calculations
+## 6. Shorter stack: 3 mm gap
+
+With a 5.0 mm gap the stacked antenna is about 8.0 mm tall (1.5 + 5.0 + 1.5 mm). The CubeSat Design Specification limits parts on a side face to 6.5 mm beyond the rails, so 8.0 mm may not fit. The deployer's own limit has not been checked. This section re-tunes the stacked cut corner for a 3.0 mm gap, about 6.0 mm tall.
+
+![Stacked cut corner, 3 mm gap](../docs/stacked_cut_corner_3mm_results.png)
+
+| Dimension | 3 mm gap | 5 mm gap |
+| --- | --- | --- |
+| Lower patch side | 35.63 mm | 36.26 mm |
+| Lower patch corner cut | 5.40 mm | 6.56 mm |
+| Feed distance from centre | 15.68 mm | 15.96 mm |
+| Feed sideways offset | 3.02 mm | 3.07 mm |
+| Upper patch side | 42.23 mm | 42.97 mm |
+| Upper patch corner cut | 6.42 mm | 7.80 mm |
+| Total height | 6.0 mm | 8.0 mm |
+
+| | 3 mm gap | 5 mm gap | Single cut corner | Requirement |
+| --- | --- | --- | --- | --- |
+| Worst S11 in the channel | −26.3 dB | −12.7 dB | −15.5 dB | −10 dB or lower |
+| −10 dB match window | 146 MHz | 206 MHz | 66 MHz | covers the channel |
+| Worst axial ratio in the channel | 1.87 dB | 1.39 dB | 4.14 dB | 3 dB or lower |
+| 3 dB axial-ratio window | 35 MHz | 49 MHz | 16 MHz | 20 MHz or more |
+| RHCP gain in the channel | 8.45 to 8.51 dBic | 8.49 to 8.56 dBic | 7.08 to 7.24 dBic | 6.5 dBic or more |
+| Half-power beamwidth | 68° | 66° | 72° | 60° or wider |
+
+The same stress tests on both gaps. Each cell is the worst axial ratio in the channel, then the lowest RHCP gain.
+
+| Case | 3 mm gap | 5 mm gap |
+| --- | --- | --- |
+| Nominal | 1.87 dB, 8.45 dBic | 1.39 dB, 8.49 dBic |
+| Board Dk 2.52 (−1.2 %) | 3.56 dB, 8.36 dBic | 2.70 dB, 8.42 dBic |
+| Board Dk 2.58 (+1.2 %) | 3.33 dB, 8.38 dBic | 2.20 dB, 8.52 dBic |
+| Both patches 0.3 mm small | 4.95 dB, 8.17 dBic | 3.62 dB, 8.36 dBic |
+| Both patches 0.3 mm large | 4.72 dB, 8.24 dBic | 3.18 dB, 8.48 dBic |
+| Four nylon spacers | 1.79 dB, 8.46 dBic | 1.29 dB, 8.45 dBic |
+
+Worst S11 stays between −21.8 and −27.6 dB in every 3 mm case.
+
+What this shows:
+
+- **The 3 mm stack keeps the gain.** It is 0.04 dB below the 5 mm stack and 1.3 dB above the single cut corner.
+- **Its match is better**, −26.3 dB against −12.7 dB. At 2.425 GHz the feed reads 45.5 + 0.3j Ω, against 34.2 + 11.6j Ω with the 5 mm gap.
+- **Its polarization window is about 30 % narrower** (35 against 49 MHz), and the frequency shifts caused by Dk and size errors are the same. So the same errors use up more of the window: a 1.2 % Dk error gives 3.3 to 3.6 dB, just over the 3 dB limit, where the 5 mm stack stays under it.
+- **The gain requirement holds in every case.** The RHCP gain figures already include the polarization loss, and the lowest is 8.17 dBic. An axial ratio of 3.6 dB costs 0.18 dB against a perfectly circular ground antenna, and 5.0 dB costs 0.33 dB.
+- **It is still much less sensitive than the single cut corner**, which reaches 8.4 to 8.7 dB with the same Dk error.
+- A 2 mm gap (5.0 mm tall) was looked at once without re-tuning. Gain was 7.8 to 7.9 dBic. It was not taken further.
+
+Not done for the 3 mm version: the gap, misalignment, steel-screw, connector, solder-mask and box tests, the board-size sweep, and a 3 mm version of the stacked dual feed.
+
+## 7. Hand calculations
 
 [`HAND_CALCS.md`](HAND_CALCS.md) has every formula, input and result. [`hand_calcs.py`](hand_calcs.py) reproduces the numbers.
 
@@ -203,25 +253,27 @@ What the tests show:
 | Single dual-feed match window | 32.1 MHz | 32.4 MHz | −1 % |
 | Stacked cut-corner axial-ratio window | 47.3 MHz | 49.4 MHz | −4 % |
 | Stacked cut-corner match window | 192 MHz | 206 MHz | −7 % |
-| Stacked cut size, as a fraction of patch area | 0.174 | 0.181 | −4 % |
+| Stacked cut size, as a fraction of the patch side | 0.174 | 0.181 | −4 % |
 | Stacked dual-feed lower patch side | 35.19 mm | 35.04 mm | +0.4 % |
 | Stacked dual-feed upper patch side | 41.72 mm | 41.51 mm | +0.5 % |
 | Stacked dual-feed feed position | 13.45 mm | 13.35 mm | +0.8 % |
 | Stacked dual-feed match window | 96 MHz | 106 MHz | −10 % |
 | Stacked dual-feed gain at the patch | 8.77 dBic | 8.74 dBic | +0.03 dB |
 | Stacked dual-feed axial ratio, typical coupler | 0.68 dB | 1.48 dB | −0.8 dB |
+| 3 mm stack: match window | 142 MHz | 146 MHz | −3 % |
+| 3 mm stack: cut size, as a fraction of the patch side | 0.149 | 0.152 | −1 % |
 
 The stacked hand calculations take the coupling between the two patches (about 19 to 20 %) from a first HFSS mapping run. They are a check on the tuning, not an independent prediction of it.
 
 The one real disagreement is the last row. The hand formula assumes the two feeds are isolated from each other. On the stacked patch they are coupled at −27 dB (against −45 dB on the single patch), and that adds about 0.8 dB of axial ratio.
 
-## 7. What this does not show
+## 8. What this does not show
 
 - **Nothing has been built or measured.** HFSS agreed with openEMS within 0.4 % in frequency on the single patches. Neither has been checked against a real board from this project.
 - **The stacked designs were solved at one mesh size** (about 40,000 elements, near the Student licence's 64,000 limit). Run-to-run scatter is about ±0.2 dB in axial ratio and ±0.03 dB in gain.
 - **The spacers and screws that hold the upper board are not designed.** Section 5 tests their electrical effect only.
 - **The coupler for the dual-feed designs is not designed.** Its error and loss are assumed typical values.
-- **The 5.0 mm gap was not optimised**, and the allowed antenna height on the satellite is not confirmed.
+- **The allowed antenna height on the satellite is not confirmed.** Only two gaps were tuned (5.0 and 3.0 mm). A gap between them, or a thinner upper board, might give a better trade and was not tried.
 - **2.425 GHz is still an assumed carrier.**
 - **The KiCad boards and Gerbers are unchanged.** No stacked board has been drawn.
 

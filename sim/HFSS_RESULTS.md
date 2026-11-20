@@ -2,6 +2,8 @@
 
 Run overnight on 14 November 2026 with Ansys Electronics Desktop Student 2025 R2 and PyAEDT 1.9.0, following [`../HFSS_TASK.md`](../HFSS_TASK.md). 41 HFSS runs; raw outputs are in [`results_hfss/`](results_hfss), one folder per run, named like the openEMS folders.
 
+Later work, 19 and 20 November 2026: two stacked-patch designs, a 3 mm gap version, the board-size sweep and hand calculations are in [`STACKED_AND_SIZE_SWEEP.md`](STACKED_AND_SIZE_SWEEP.md) and [`HAND_CALCS.md`](HAND_CALCS.md).
+
 ## Summary
 
 **HFSS agrees with openEMS. The design is confirmed within the task's limits (1 % in frequency, 0.3 dB in gain).**
