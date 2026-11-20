@@ -62,6 +62,58 @@ RUNS = [
     ("TA", "A_L37.28_f5.80_er2.55_h1.52_Gm100_pec", f"{A_BEST} --pec --tag pec"),
 ]
 
+# Board-size sweep (run with --mesh 40000). Patch dimensions stay fixed; only the board side G changes.
+#   SZ  = on the 100 mm metal face (the real mounting)      SZB = bare board, ground = board
+SIZES = [45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 100]
+B_DIMS = f"--board B --L 37.52 --feed 7.00 --cut 3.50 {PTFE}"
+A_DIMS = f"--board A --L 37.28 --feed 5.80 {PTFE}"
+for _g in SIZES:
+    for _pre, _dims in (("B_L37.52_f7.00_c3.50_er2.55_h1.52", B_DIMS), ("A_L37.28_f5.80_er2.55_h1.52", A_DIMS)):
+        if _g != 60:   # 60 mm on the face is the nominal run above
+            RUNS.append(("SZ", f"{_pre}{'_Gm100' if _g < 100 else ''}_G{_g}", f"{_dims} --Gm 100 --G {_g} --tag G{_g}"))
+        if _g < 100 and _g % 10 == 0:   # 100 mm bare is the same model as 100 mm on the face
+            RUNS.append(("SZB", f"{_pre}_bareG{_g}", f"{_dims} --G {_g} --tag bareG{_g}"))
+
+# Stacked patch (board S). Its tuned dimensions live in stacked_design.json so the stress tests, the size
+# sweep and hand_calcs.py all use the same numbers. Run TS / SZ / SZB with --mesh 40000.
+S_JSON = os.path.join(HERE, "stacked_design.json")
+S_WIDE = "--ff_half 100 --ff_step 5 --s_lo 2.2 --s_hi 2.7"
+if os.path.exists(S_JSON):
+    import json
+    _S = {k: v for k, v in json.load(open(S_JSON)).items() if k in ("L", "feed", "feed_y", "cut", "L2", "cut2", "gap")}
+
+    def s_run(group, tag="", er=2.55, Gm=100, G=60, extra="", **over):
+        d = dict(_S, **over)
+        name = f"S_L{d['L']:.2f}_f{d['feed']:.2f}_c{d['cut']:.2f}" + (f"_fy{d['feed_y']:.2f}" if d["feed_y"] else "")
+        name += f"_U{d['L2']:.2f}_uc{d['cut2']:.2f}_g{d['gap']:.2f}_er{er:.2f}_h1.52"
+        name += ("_Gm100" if Gm > G else "") + (f"_{tag}" if tag else "")
+        args = (f"--board S --L {d['L']} --feed {d['feed']} --feed_y {d['feed_y']} --cut {d['cut']} --L2 {d['L2']} "
+                f"--cut2 {d['cut2']} --gap {d['gap']} --er {er} --tand 0.0018 --G {G} {S_WIDE}")
+        args += (f" --Gm {Gm}" if Gm else "") + (f" --tag {tag}" if tag else "") + (f" {extra}" if extra else "")
+        RUNS.append((group, name, args))
+
+    s_run("TS")
+    s_run("TS", er=2.52)
+    s_run("TS", er=2.58)
+    s_run("TS", L=round(_S["L"] - 0.3, 2), L2=round(_S["L2"] - 0.3, 2))   # both patches etched 0.3 mm small
+    s_run("TS", L=round(_S["L"] + 0.3, 2), L2=round(_S["L2"] + 0.3, 2))
+    s_run("TS", gap=round(_S["gap"] - 0.2, 2))
+    s_run("TS", gap=round(_S["gap"] + 0.2, 2))
+    s_run("TS", tag="shift0.5", extra="--dx2 0.5 --dy2 0.5")              # upper board 0.5 mm off in x and y
+    s_run("TS", tag="sma", extra="--sma")
+    s_run("TS", tag="mask", extra="--mask")
+    s_run("TS", tag="box", extra="--box")
+    s_run("TS", tag="pec", extra="--pec")
+    s_run("TS", tag="nylon", extra="--spacers nylon")
+    s_run("TS", tag="steel", extra="--spacers steel")
+    for _g in SIZES:
+        if _g < 50:          # the upper patch needs a 50 mm board
+            continue
+        if _g != 60:
+            s_run("SZ", tag=f"G{_g}", G=_g)
+        if _g < 100 and _g % 10 == 0:
+            s_run("SZB", tag=f"bareG{_g}", G=_g, Gm=0)
+
 
 def aedt_pids():
     out = subprocess.run(["tasklist", "/FO", "CSV", "/NH"], capture_output=True, text=True).stdout
