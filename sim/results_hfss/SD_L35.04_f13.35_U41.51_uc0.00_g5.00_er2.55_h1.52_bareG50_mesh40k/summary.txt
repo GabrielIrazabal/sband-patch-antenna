@@ -1,0 +1,17 @@
+design: SD_L35.04_f13.35_U41.51_uc0.00_g5.00_er2.55_h1.52_bareG50_mesh40k
+S11 minimum: -9.2 dB at 2.4490 GHz
+worst S11 in 2.415-2.435 GHz: -7.4 dB (need <= -10.0)
+-10 dB bandwidth: None MHz
+axial ratio minimum: 0.50 dB at 2.4100 GHz; 3 dB bandwidth None MHz
+worst axial ratio in band: 0.58 dB (need <= 3.0)
+RHCP realized gain in band: 6.36 to 6.69 dBic (need >= 6.5)
+total realized gain at f0: 6.56 dBi; directivity 7.53 dBi; radiation efficiency 94 %
+RHCP minus LHCP at f0: 30.4 dB -> RHCP
+HPBW phi=0: 78 deg, phi=90: 78 deg (need >= 60.0)
+port isolation S21 at f0: -34.6 dB
+mesh: 49579 tetrahedra after 16 passes, delta S 0.020082
+input impedance at f0: 108.9 -20.0 j ohm; at the S11 minimum: 62.2 -39.4 j ohm
+hybrid off by 0.5 dB and 3.0 deg (worst sign): axial ratio 1.21 dB, RHCP gain at least 6.35 dBic in band (before the hybrid's own loss)
+hybrid off by 1.0 dB and 5.0 deg (worst sign): axial ratio 1.80 dB, RHCP gain at least 6.33 dBic in band (before the hybrid's own loss)
+hybrid off by 1.0 dB and 10.0 deg (worst sign): axial ratio 2.28 dB, RHCP gain at least 6.30 dBic in band (before the hybrid's own loss)
+solve time: 7.0 min
