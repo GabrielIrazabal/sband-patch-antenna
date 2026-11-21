@@ -277,6 +277,53 @@ def stacked_short(out, S, G):
             + ", ".join(f"{x} dB costs {pol_loss_db(x):.2f} dB" for x in (3.3, 3.6, 4.7, 5.0)) + ".", ""]
 
 
+def thick(out, T):
+    """Single patch on a 3.05 mm substrate made of two bonded 1.524 mm boards (no air gap, no second patch)."""
+    h = T["h"] * 1e-3
+    L, ee, dL = hammerstad(F0, ER, h)
+    j = jackson(F0, ER, TAND, h, L)
+    Q = j["Q"]
+    L1, _, _ = hammerstad(F0, ER, H)
+    q1 = jackson(F0, ER, TAND, H, L1)["Q"]
+    B = next(v for v in T["boards"].values() if v.get("cut"))
+    A = next(v for v in T["boards"].values() if not v.get("cut"))
+    b = summary(B.get("hfss_run", "")) or {}
+    a = summary(A.get("hfss_run", "")) or {}
+    b0 = summary(T.get("no_offset_run", "")) or {}
+    phi = math.atan2(B.get("feed_y", 0.0), B["feed"])
+    rho = math.cos(math.radians(45) - phi) / math.cos(math.radians(45) + phi)
+    split = (rho + 1 / rho) / 2            # mode split needed, relative to a feed on the centre line
+    shift = (rho - 1 / rho) / (4 * Q)      # CP frequency moves up by this fraction, so the patch grows by it
+    eff_cd = 1 / (1 + j["Q_space"] * (1 / j["Q_diel"] + 1 / j["Q_cond"]))
+    out += [f"## 5. Single patch on a {T['h']:.2f} mm board (two 1.524 mm boards bonded, no air gap)", "",
+            f"Same formulas as section 1 with the substrate twice as thick. Effective Dk {ee:.3f}, fringing length "
+            f"{dL * 1e3:.2f} mm per edge, Q {Q:.1f} (radiation {j['Q_space']:.0f}, dielectric {j['Q_diel']:.0f}, "
+            f"copper {j['Q_cond']:.0f}) against {q1:.1f} on the single board. Q roughly halves, so every bandwidth "
+            "roughly doubles, and the copper and dielectric losses matter half as much.", "",
+            f"The feed pin is twice as long, so its inductance is about double. On the cut-corner board the feed is "
+            f"moved {B.get('feed_y', 0.0):.2f} mm sideways to cancel it, which drives the two modes unequally "
+            f"(ratio rho = {rho:.2f}). Circular polarization then needs a mode split larger by (rho + 1/rho)/2 = "
+            f"{split:.2f} and sits (rho - 1/rho)/4Q = {shift * 100:.2f} % higher in frequency.", "",
+            "| Quantity | Hand calculation | HFSS (tuned design) | Difference |", "| --- | --- | --- | --- |",
+            row("Patch side, dual feed (square patch at 2.425 GHz)", L * 1e3, A["L"], "mm"),
+            row("Patch side, cut corner (with the sideways feed)", L * 1e3 * (1 + split / (4 * Q) + shift), B["L"], "mm"),
+            row("Corner-cut leg, c = L sqrt((rho + 1/rho)/2 x 1/2Q)", L * 1e3 * math.sqrt(split / (2 * Q)), B["cut"], "mm"),
+            row("Feed offset, dual feed (50 ohm per port)", feed_offset(L, j["R_edge"]) * 1e3, A["feed"], "mm"),
+            row("3 dB axial-ratio bandwidth, cut corner (0.348/Q)", 0.348 / Q * F0 / 1e6, b.get("axial_ratio_3dB_band_MHz"), "MHz", "{:.1f}"),
+            row("Match bandwidth, cut corner (sqrt2/Q)", math.sqrt(2) / Q * F0 / 1e6, b.get("s11_10dB_band_MHz"), "MHz", "{:.0f}"),
+            row("Match bandwidth, dual feed (1/(sqrt2 Q))", 1 / (math.sqrt(2) * Q) * F0 / 1e6, a.get("s11_10dB_band_MHz"), "MHz", "{:.0f}"),
+            row("Radiation efficiency, copper and dielectric loss only", eff_cd * 100,
+                (a.get("radiation_efficiency_at_f0") or 0) * 100 or None, "%", "{:.0f}"),
+            row("Radiation efficiency, also counting the surface wave as lost (HFSS on a 60 mm board does not)",
+                j["eff"] * 100, None, "%", "{:.0f}"),
+            row("Directivity (infinite ground; HFSS is on the 100 mm face)", j["D_dBi"], a.get("directivity_at_f0_dBi"), "dBi"),
+            row("Gain = directivity x efficiency, dual feed before coupler loss", j["D_dBi"] + 10 * math.log10(eff_cd), a.get("rhcp_gain_at_f0_dBic"), "dBic"),
+            row("Feed-pin reactance (0.5 mm pin), feed on the centre line", probe_x(F0, ER, h, R_PIN),
+                (b0.get("z_in_at_f0_ohm") or [None, None])[1], "ohm", "{:.0f}"),
+            row("Frequency shift per mm of patch size", -F0 / (L + 2 * dL) / 1e9, T.get("mhz_per_mm"), "MHz/mm", "{:.0f}"),
+            ""]
+
+
 def main(S=None):
     out = ["# Hand calculations against HFSS", "",
            "Closed-form textbook models, used as a check that the simulated designs are where theory says they "
@@ -294,6 +341,9 @@ def main(S=None):
         gp = os.path.join(HERE, "stacked_design_g3.json")
         if os.path.exists(gp):
             stacked_short(out, S, json.load(open(gp)))
+    tp = os.path.join(HERE, "thick_design.json")
+    if os.path.exists(tp):
+        thick(out, json.load(open(tp)))
     text = "\n".join(out)
     print(text)
     with open(os.path.join(HERE, "HAND_CALCS.md"), "w", encoding="utf-8") as fh:

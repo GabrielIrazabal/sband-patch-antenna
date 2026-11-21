@@ -1,6 +1,6 @@
 # Results on the 60 mm board
 
-Four plots for each tuned antenna, each in its own file. Ansys HFSS, about 40,000-element mesh, 60 mm square PTFE board (Dk 2.55, 1.524 mm) on a 100 mm metal face, 2.425 GHz, channel 2.415 to 2.435 GHz. Simulation only: nothing has been built or measured.
+Four plots for each tuned antenna, each in its own file. Ansys HFSS, about 40,000-element mesh, 60 mm square PTFE board (Dk 2.55, 1.524 mm) on a 100 mm metal face, 2.425 GHz, channel 2.415 to 2.435 GHz. The two 3 mm boards are two 1.524 mm boards bonded with no air gap, one patch on top. Simulation only: nothing has been built or measured.
 
 Dual-feed figures assume a typical 90 degree coupler (0.5 dB and 3 degrees off, 0.4 dB loss).
 
@@ -11,6 +11,8 @@ Dual-feed figures assume a typical 90 degree coupler (0.5 dB and 3 degrees off, 
 | [Stacked cut corner, 5 mm gap](stacked_cut_corner_5mm_gap/) | -12.7 dB | 206 MHz | 1.39 dB | 49 MHz | 8.49 to 8.56 dBic | 66 deg | 8.0 mm | second board, spacers | yes |
 | [Stacked cut corner, 3 mm gap](stacked_cut_corner_3mm_gap/) | -26.3 dB | 146 MHz | 1.87 dB | 35 MHz | 8.45 to 8.51 dBic | 68 deg | 6.0 mm | second board, spacers | yes |
 | [Stacked dual feed, 5 mm gap](stacked_dual_feed/) | -19.2 dB | 106 MHz | 1.48 dB | set by the coupler | 8.28 to 8.34 dBic | 66 deg | 8.0 mm | second board, spacers, coupler, load, second line | yes |
+| [Cut corner, 3 mm board (two bonded)](thick_cut_corner_3mm/) | -19.1 dB | 131 MHz | 2.17 dB | 32 MHz | 7.61 to 7.67 dBic | 73 deg | 3.0 mm | second board, bonded | yes |
+| [Dual feed, 3 mm board (two bonded)](thick_dual_feed_3mm/) | -16.4 dB | 63 MHz | 0.94 dB | set by the coupler | 7.26 to 7.32 dBic | 73 deg | 3.0 mm | second board bonded, coupler, load, second line | yes |
 
 Requirements: S11 -10 dB or lower, axial ratio 3 dB or lower, RHCP gain 6.5 dBic or more, beamwidth 60 degrees or wider, all across the channel.
 
@@ -73,3 +75,27 @@ HFSS run: `SD_L35.04_f13.35_U41.51_uc0.00_g5.00_er2.55_h1.52_Gm100_mesh40k`
 | Gain | Pattern |
 | --- | --- |
 | ![Gain](stacked_dual_feed/3_gain.png) | ![Pattern](stacked_dual_feed/4_pattern.png) |
+
+## Cut corner, 3 mm board (two bonded)
+
+HFSS run: `B_L37.10_f8.00_c5.55_fy2.18_er2.55_h3.05_Gm100_mesh40k`
+
+| Match | Axial ratio |
+| --- | --- |
+| ![S11](thick_cut_corner_3mm/1_s11.png) | ![Axial ratio](thick_cut_corner_3mm/2_axial_ratio.png) |
+
+| Gain | Pattern |
+| --- | --- |
+| ![Gain](thick_cut_corner_3mm/3_gain.png) | ![Pattern](thick_cut_corner_3mm/4_pattern.png) |
+
+## Dual feed, 3 mm board (two bonded)
+
+HFSS run: `A_L36.39_f6.70_er2.55_h3.05_Gm100_mesh40k`
+
+| Match | Axial ratio |
+| --- | --- |
+| ![S11](thick_dual_feed_3mm/1_s11.png) | ![Axial ratio](thick_dual_feed_3mm/2_axial_ratio.png) |
+
+| Gain | Pattern |
+| --- | --- |
+| ![Gain](thick_dual_feed_3mm/3_gain.png) | ![Pattern](thick_dual_feed_3mm/4_pattern.png) |

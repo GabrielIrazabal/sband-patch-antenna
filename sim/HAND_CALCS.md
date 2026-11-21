@@ -97,3 +97,25 @@ No uncut pair was solved at this gap, so Q is taken from the HFSS axial-ratio ba
 
 Polarization loss if a tolerance pushes the axial ratio past 3 dB: 3.3 dB costs 0.15 dB, 3.6 dB costs 0.18 dB, 4.7 dB costs 0.29 dB, 5.0 dB costs 0.33 dB.
 
+## 5. Single patch on a 3.05 mm board (two 1.524 mm boards bonded, no air gap)
+
+Same formulas as section 1 with the substrate twice as thick. Effective Dk 2.326, fringing length 1.53 mm per edge, Q 27.5 (radiation 33, dielectric 556, copper 2271) against 53.5 on the single board. Q roughly halves, so every bandwidth roughly doubles, and the copper and dielectric losses matter half as much.
+
+The feed pin is twice as long, so its inductance is about double. On the cut-corner board the feed is moved 2.18 mm sideways to cancel it, which drives the two modes unequally (ratio rho = 1.75). Circular polarization then needs a mode split larger by (rho + 1/rho)/2 = 1.16 and sits (rho - 1/rho)/4Q = 1.07 % higher in frequency.
+
+| Quantity | Hand calculation | HFSS (tuned design) | Difference |
+| --- | --- | --- | --- |
+| Patch side, dual feed (square patch at 2.425 GHz) | 37.47 mm | 36.39 mm | +3.0 % |
+| Patch side, cut corner (with the sideways feed) | 38.26 mm | 37.10 mm | +3.1 % |
+| Corner-cut leg, c = L sqrt((rho + 1/rho)/2 x 1/2Q) | 5.44 mm | 5.55 mm | -2.0 % |
+| Feed offset, dual feed (50 ohm per port) | 4.80 mm | 6.70 mm | -28.3 % |
+| 3 dB axial-ratio bandwidth, cut corner (0.348/Q) | 30.6 MHz | 31.5 MHz | -2.7 % |
+| Match bandwidth, cut corner (sqrt2/Q) | 125 MHz | 131 MHz | -5.1 % |
+| Match bandwidth, dual feed (1/(sqrt2 Q)) | 62 MHz | 63 MHz | -1.5 % |
+| Radiation efficiency, copper and dielectric loss only | 93 % | 95 % | -1.8 % |
+| Radiation efficiency, also counting the surface wave as lost (HFSS on a 60 mm board does not) | 84 % |  % |  |
+| Directivity (infinite ground; HFSS is on the 100 mm face) | 7.15 dBi | 7.98 dBi | -0.83 dB |
+| Gain = directivity x efficiency, dual feed before coupler loss | 6.84 dBic | 7.72 dBic | -0.88 dB |
+| Feed-pin reactance (0.5 mm pin), feed on the centre line | 37 ohm | 31 ohm | +20.3 % |
+| Frequency shift per mm of patch size | -60 MHz/mm | -64 MHz/mm | +6.5 % |
+

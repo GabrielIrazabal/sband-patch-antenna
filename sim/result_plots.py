@@ -30,6 +30,10 @@ ANTENNAS = [
     ("stacked_dual_feed", "Stacked dual feed, 5 mm gap",
      "SD_L35.04_f13.35_U41.51_uc0.00_g5.00_er2.55_h1.52_Gm100_mesh40k", True, "8.0 mm",
      "second board, spacers, coupler, load, second line"),
+    ("thick_cut_corner_3mm", "Cut corner, 3 mm board (two bonded)",
+     "B_L37.10_f8.00_c5.55_fy2.18_er2.55_h3.05_Gm100_mesh40k", False, "3.0 mm", "second board, bonded"),
+    ("thick_dual_feed_3mm", "Dual feed, 3 mm board (two bonded)",
+     "A_L36.39_f6.70_er2.55_h3.05_Gm100_mesh40k", True, "3.0 mm", "second board bonded, coupler, load, second line"),
 ]
 
 
@@ -124,6 +128,7 @@ def main():
     md = ["# Results on the 60 mm board", "",
           "Four plots for each tuned antenna, each in its own file. Ansys HFSS, about 40,000-element mesh, 60 mm "
           "square PTFE board (Dk 2.55, 1.524 mm) on a 100 mm metal face, 2.425 GHz, channel 2.415 to 2.435 GHz. "
+          "The two 3 mm boards are two 1.524 mm boards bonded with no air gap, one patch on top. "
           "Simulation only: nothing has been built or measured.", "",
           f"Dual-feed figures assume a typical 90 degree coupler (0.5 dB and 3 degrees off, {HYBRID_LOSS} dB loss).", "",
           "| Antenna | Worst S11 | Match window | Worst axial ratio | 3 dB AR window | RHCP gain in channel | Beamwidth | Height | Extra parts | Meets all four |",

@@ -1,0 +1,97 @@
+{
+ "note": "Single patch on a 3.05 mm substrate made of two 1.524 mm ZYF255DA boards bonded with no air gap. Tuned in HFSS on the 60 mm board over a 100 mm metal face, 2.425 GHz. Read by kicad/prototype_thick.py, sim/thick_compare.py and sim/hand_calcs.py.",
+ "h": 3.048,
+ "boards": {
+  "B_cutcorner_RHCP_PTFE_3mm": {
+   "title": "B-3MM: CUT-CORNER RHCP",
+   "L": 37.1,
+   "feed": 8.0,
+   "feed_y": 2.18,
+   "cut": 5.55,
+   "ports": [
+    "x"
+   ],
+   "back_note": "TUNED FOR A 100 MM METAL FACE",
+   "hfss_run": "B_L37.10_f8.00_c5.55_fy2.18_er2.55_h3.05_Gm100_mesh40k"
+  },
+  "A_dualfeed_PTFE_3mm": {
+   "title": "A-3MM: DUAL-FEED (HYBRID)",
+   "L": 36.39,
+   "feed": 6.7,
+   "ports": [
+    "x",
+    "y"
+   ],
+   "back_note": "RHCP: J2 LAGS J1 BY 90 DEG",
+   "hfss_run": "A_L36.39_f6.70_er2.55_h3.05_Gm100_mesh40k"
+  }
+ },
+ "no_offset_run": "B_L36.73_f7.30_c4.90_er2.55_h3.05_Gm100_mesh40k",
+ "mhz_per_mm": -64.0,
+ "stress": {
+  "B": [
+   [
+    "Dk 2.52 (-1.2 %)",
+    "B_L37.10_f8.00_c5.55_fy2.18_er2.52_h3.05_Gm100_mesh40k"
+   ],
+   [
+    "Dk 2.58 (+1.2 %)",
+    "B_L37.10_f8.00_c5.55_fy2.18_er2.58_h3.05_Gm100_mesh40k"
+   ],
+   [
+    "Patch 0.3 mm smaller",
+    "B_L36.80_f8.00_c5.55_fy2.18_er2.55_h3.05_Gm100_mesh40k"
+   ],
+   [
+    "Patch 0.3 mm larger",
+    "B_L37.40_f8.00_c5.55_fy2.18_er2.55_h3.05_Gm100_mesh40k"
+   ],
+   [
+    "0.02 mm air film between the boards",
+    "B_L37.10_f8.00_c5.55_fy2.18_er2.52_h3.07_Gm100_mesh40k"
+   ],
+   [
+    "0.05 mm air film between the boards",
+    "B_L37.10_f8.00_c5.55_fy2.18_er2.49_h3.10_Gm100_mesh40k"
+   ],
+   [
+    "0.05 mm adhesive layer, Dk 3.0",
+    "B_L37.10_f8.00_c5.55_fy2.18_er2.56_h3.10_Gm100_mesh40k"
+   ]
+  ],
+  "A": [
+   [
+    "Dk 2.52 (-1.2 %)",
+    "A_L36.39_f6.70_er2.52_h3.05_Gm100_mesh40k"
+   ],
+   [
+    "Dk 2.58 (+1.2 %)",
+    "A_L36.39_f6.70_er2.58_h3.05_Gm100_mesh40k"
+   ],
+   [
+    "Patch 0.3 mm smaller",
+    "A_L36.09_f6.70_er2.55_h3.05_Gm100_mesh40k"
+   ],
+   [
+    "Patch 0.3 mm larger",
+    "A_L36.69_f6.70_er2.55_h3.05_Gm100_mesh40k"
+   ],
+   [
+    "0.02 mm air film between the boards",
+    "A_L36.39_f6.70_er2.52_h3.07_Gm100_mesh40k"
+   ],
+   [
+    "0.05 mm air film between the boards",
+    "A_L36.39_f6.70_er2.49_h3.10_Gm100_mesh40k"
+   ],
+   [
+    "0.10 mm air film between the boards",
+    "A_L36.39_f6.70_er2.43_h3.15_Gm100_mesh40k"
+   ],
+   [
+    "0.05 mm adhesive layer, Dk 3.0",
+    "A_L36.39_f6.70_er2.56_h3.10_Gm100_mesh40k"
+   ]
+  ]
+ }
+}

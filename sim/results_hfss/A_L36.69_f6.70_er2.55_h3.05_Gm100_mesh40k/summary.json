@@ -1,0 +1,111 @@
+{
+ "design": "A_L36.69_f6.70_er2.55_h3.05_Gm100_mesh40k",
+ "s11_min_dB": -22.06,
+ "s11_min_freq_GHz": 2.4045,
+ "s11_worst_in_band_dB": -10.3,
+ "s11_10dB_band_MHz": 62.3,
+ "s11_10dB_band_edges_GHz": [
+  2.374,
+  2.4363
+ ],
+ "axial_ratio_min_dB": 0.21,
+ "axial_ratio_min_freq_GHz": 2.375,
+ "axial_ratio_at_f0_dB": 0.28,
+ "axial_ratio_worst_in_band_dB": 0.3,
+ "axial_ratio_3dB_band_MHz": null,
+ "axial_ratio_3dB_band_edges_GHz": [
+  null,
+  null
+ ],
+ "rhcp_gain_max_dBic": 7.72,
+ "rhcp_gain_max_freq_GHz": 2.405,
+ "rhcp_gain_at_f0_dBic": 7.56,
+ "rhcp_gain_min_in_band_dBic": 7.35,
+ "rhcp_gain_max_in_band_dBic": 7.69,
+ "realized_gain_total_at_f0_dBi": 7.56,
+ "realized_gain_total_max_dBi": 7.72,
+ "directivity_at_f0_dBi": 8.0,
+ "radiation_efficiency_at_f0": 0.949,
+ "hpbw_deg_phi0_phi90": [
+  72.5,
+  72.4
+ ],
+ "rhcp_minus_lhcp_at_f0_dB": 35.8,
+ "hand": "RHCP",
+ "solve_minutes": 5.2,
+ "options": {
+  "board": "A",
+  "f0": 2.425,
+  "bw": 20.0,
+  "L": 36.69,
+  "feed": 6.7,
+  "cut": 3.13,
+  "h": 3.048,
+  "G": 60.0,
+  "Gm": 100.0,
+  "er": 2.55,
+  "tand": 0.0018,
+  "r_pin": 0.25,
+  "r_clear": 0.8,
+  "feed_y": 0.0,
+  "L2": 46.0,
+  "cut2": 0.0,
+  "gap": 4.0,
+  "h2": 1.524,
+  "dx2": 0.0,
+  "dy2": 0.0,
+  "G2": 0.0,
+  "ff_half": 60.0,
+  "ff_step": 5.0,
+  "s_lo": 2.2,
+  "s_hi": 2.65,
+  "version": null,
+  "graphical": false,
+  "cores": 4,
+  "pec": false,
+  "delta_s": 0.01,
+  "passes": 20,
+  "target_tets": 40000,
+  "pad": 0.0,
+  "sma": false,
+  "mask": false,
+  "box": false,
+  "box_depth": 100.0,
+  "up_side": "bottom",
+  "spacers": "none",
+  "tag": ""
+ },
+ "isolation_s21_at_f0_dB": -33.8,
+ "active_s11_worst_in_band_dB": -9.66,
+ "z_in_at_f0_ohm": [
+  33.1,
+  -6.9
+ ],
+ "z_in_at_s11_min_ohm": [
+  52.2,
+  -7.8
+ ],
+ "hybrid_imbalance": [
+  {
+   "amplitude_dB": 0.5,
+   "phase_deg": 3.0,
+   "axial_ratio_worst_in_band_dB": 0.96,
+   "rhcp_gain_min_in_band_dBic": 7.34
+  },
+  {
+   "amplitude_dB": 1.0,
+   "phase_deg": 5.0,
+   "axial_ratio_worst_in_band_dB": 1.54,
+   "rhcp_gain_min_in_band_dBic": 7.32
+  },
+  {
+   "amplitude_dB": 1.0,
+   "phase_deg": 10.0,
+   "axial_ratio_worst_in_band_dB": 2.07,
+   "rhcp_gain_min_in_band_dBic": 7.29
+  }
+ ],
+ "adaptive_passes": 17,
+ "tetrahedra": 40202,
+ "final_delta_s": 0.0044307
+}
