@@ -52,16 +52,32 @@ def row(label, r, height):
             f"{r['g_lo']:.2f} to {r['g_hi']:.2f} dBic | {r['hp']:.0f} deg | {r['eff'] * 100:.0f} % | {'yes' if ok else 'no'} |")
 
 
+S = "_er2.55_h1.52_Gm100_mesh40k"
+THIN_STRESS = {   # the same cases on the thin boards, from the earlier runs
+    "B": {"Dk 2.52 (-1.2 %)": "B_L37.52_f7.00_c3.50_er2.52_h1.52_Gm100_mesh40k",
+          "Dk 2.58 (+1.2 %)": "B_L37.52_f7.00_c3.50_er2.58_h1.52_Gm100_mesh40k",
+          "Patch 0.3 mm smaller": "B_L37.22_f7.00_c3.50" + S, "Patch 0.3 mm larger": "B_L37.82_f7.00_c3.50" + S},
+    "A": {"Dk 2.52 (-1.2 %)": "A_L37.28_f5.80_er2.52_h1.52_Gm100_mesh40k",
+          "Dk 2.58 (+1.2 %)": "A_L37.28_f5.80_er2.58_h1.52_Gm100_mesh40k",
+          "Patch 0.3 mm smaller": "A_L36.98_f5.80" + S, "Patch 0.3 mm larger": "A_L37.58_f5.80" + S}}
+
+
+def cell(run, dual):
+    if not run or not os.path.exists(os.path.join(RES, run, "summary.json")):
+        return "not run", ""
+    r = load(run, dual)
+    ok = r["s11_worst"] <= -10 and r["ar_worst"] <= 3 and r["g_lo"] >= 6.5
+    return f"{r['s11_worst']:.1f} dB, {r['ar_worst']:.2f} dB, {r['g_lo']:.2f} to {r['g_hi']:.2f} dBic", "pass" if ok else "fail"
+
+
 def stress_rows(T, key, dual):
     out = []
     for label, run in T.get("stress", {}).get(key, []):
-        p = os.path.join(RES, run, "summary.json")
-        if not os.path.exists(p):
-            continue
-        r = load(run, dual)
-        ok = r["s11_worst"] <= -10 and r["ar_worst"] <= 3 and r["g_lo"] >= 6.5
-        out.append(f"| {label} | {r['s11_worst']:.1f} dB | {r['ar_worst']:.2f} dB | {r['g_lo']:.2f} to {r['g_hi']:.2f} dBic | "
-                   f"{'pass' if ok else 'fail'} |")
+        thin, thin_ok = cell(THIN_STRESS[key].get(label), dual)
+        if label not in THIN_STRESS[key]:
+            thin = "does not apply (one board)"
+        thick, thick_ok = cell(run, dual)
+        out.append(f"| {label} | {thin} | {thin_ok} | {thick} | {thick_ok} |")
     return out
 
 
@@ -109,8 +125,9 @@ def main():
     for k in "BA":
         sr = stress_rows(T, k, k == "A")
         if sr:
-            md += ["", f"Stress tests, {names[k].lower()} on the 3 mm board:", "",
-                   "| Case | Worst S11 | Worst axial ratio | RHCP gain in channel | Result |", "| --- | --- | --- | --- | --- |"] + sr
+            md += ["", f"Stress tests, {names[k].lower()}:", "",
+                   "Each cell is worst S11, worst axial ratio, RHCP gain in the channel.", "",
+                   "| Case | Thin board | | 3 mm board | |", "| --- | --- | --- | --- | --- |"] + sr
     text = "\n".join(md)
     with open(os.path.join(RES, "thick_tables.md"), "w", encoding="utf-8") as fh:
         fh.write(text + "\n")

@@ -12,6 +12,7 @@ All four antennas use JLC's PTFE (ZYF255DA, Dk 2.55, 1.524 mm) and are tuned for
 - **On the stacked patch, the dual feed is not better than the cut corner.** With a typical coupler its axial ratio is about the same (1.48 against 1.39 dB), its gain is 0.2 dB lower, and it needs a coupler, a load and a second line.
 - **Board size barely changes anything when the board sits on the 100 mm metal face.** From 50 to 100 mm, gain moves by less than 0.1 dB and beamwidth by less than 1 degree for all four. The one exception is the stacked cut corner at 50 mm, where the axial ratio rises to 3.34 dB.
 - **Hand calculations agree with HFSS** within 3 % on patch size and within 10 % on bandwidth for all four. See [`HAND_CALCS.md`](HAND_CALCS.md).
+- **A flat alternative was tuned afterwards:** one patch on two boards bonded with no air gap (3 mm tall). It gives 7.3 to 7.7 dBic, between the thin boards and the stacks. See [`THICK_BOARD.md`](THICK_BOARD.md).
 
 ## 1. The four antennas side by side
 
@@ -275,7 +276,7 @@ The one real disagreement is the last row. The hand formula assumes the two feed
 - **The coupler for the dual-feed designs is not designed.** Its error and loss are assumed typical values.
 - **The allowed antenna height on the satellite is not confirmed.** Only two gaps were tuned (5.0 and 3.0 mm). A gap between them, or a thinner upper board, might give a better trade and was not tried.
 - **2.425 GHz is still an assumed carrier.**
-- **The KiCad boards and Gerbers are unchanged.** No stacked board has been drawn.
+- **The rev-1 KiCad boards and Gerbers are unchanged.** No air-gap stacked board has been drawn. (Prototype boards for the bonded 3 mm design are in `kicad/prototype_thick/`.)
 
 ## How to reproduce
 
