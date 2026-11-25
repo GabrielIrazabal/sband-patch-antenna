@@ -1,18 +1,18 @@
 # Prototype: 3 mm patch boards
 
-**Status: prototype drawings for discussion.** Nothing here has been ordered, no Gerbers have been exported, and the rev-1 boards, `fab/` and `generate_boards.py` are unchanged. The dimensions come from simulation only.
+**Status: prototype, not ordered.** Gerbers are in `fab/` (one zip per board, four in all). The boards were regenerated with KiCad 10 on 24 November 2026 and pass DRC, apart from KiCad's note that the feed hole sits inside the SMA footprint, which is intended. The rev-1 boards are unchanged. The dimensions come from simulation only, and the open points below are not settled.
 
 ## What this is
 
-JLC sells the PTFE (ZYF255DA) as a 1.524 mm two-layer board. A patch on a board twice as thick has about twice the bandwidth and about 0.4 to 0.5 dB more gain (see [`sim/THICK_BOARD.md`](../../sim/THICK_BOARD.md)). So each antenna here is built from two 1.524 mm boards bonded face to face, with one patch on top:
+JLC sells the PTFE (ZYF255DA) as a 1.524 mm two-layer board. A patch on a board twice as thick has about twice the bandwidth and about 0.4 to 0.5 dB more gain (see [`docs/results_60mm/`](../../docs/results_60mm/README.md) and [`sim/results_hfss/thick_tables.md`](../../sim/results_hfss/thick_tables.md)). So each antenna here is built from two 1.524 mm boards bonded face to face, with one patch on top:
 
 ![Cross-section](../../docs/thick_stackup.png)
 
 | Folder | What is on it |
 | --- | --- |
-| `B_cutcorner_RHCP_PTFE_3mm_TOP` | Cut-corner patch on the front. No copper on the back. |
+| `B_cutcorner_RHCP_PTFE_3mm_TOP` | Cut-corner patch on the front. No copper on the back. No solder mask and no silkscreen on the front. |
 | `B_cutcorner_RHCP_PTFE_3mm_BOTTOM` | No copper on the front. Ground plane and one SMA on the back. |
-| `A_dualfeed_PTFE_3mm_TOP` | Square patch on the front. No copper on the back. |
+| `A_dualfeed_PTFE_3mm_TOP` | Square patch on the front. No copper on the back. No solder mask and no silkscreen on the front. |
 | `A_dualfeed_PTFE_3mm_BOTTOM` | No copper on the front. Ground plane and two SMAs on the back. |
 
 Each folder has the KiCad board and an SVG picture. The BOTTOM pictures are drawn as seen from the back. All four boards report `DRC clean`.
@@ -44,13 +44,17 @@ On the dual feed, RHCP needs J2 to lag J1 by 90°, the same as the rev-1 board A
 - **The feed hole is plated but has a pad on one face only**, so that both bond faces stay bare and flat. JLC may ask about a plated hole with no pad on one side. The alternative is an unplated hole in both boards; the wire carries the signal either way.
 - **Each board has copper on one side only.** Check that JLC will build ZYF255DA with one side fully etched.
 - **The cut corner is still sensitive to tolerances.** With Dk ±1.2 % or the patch ±0.3 mm its axial ratio goes to 4.2 to 5.6 dB. If it is built, it needs −0.3 and +0.3 mm variants like rev 1. These are not drawn.
-- **These files were written with KiCad 8.0.** The rev-1 boards were generated with a newer KiCad, which will open these files; the reverse is not true.
+- **The two bond faces still get solder mask** (the back of each TOP board and the front of each BOTTOM board), because that is the factory default. That puts two thin mask layers in the joint as well as the adhesive, which the simulation does not include. Bare laminate would match the model better, but adhesive may hold less well on bare PTFE. Decide this with whoever does the bonding; removing the mask is a one-line change in `prototype_thick.py`.
+- **The labels are on the BOTTOM boards only.** The TOP boards have no silkscreen, since ink cannot sit in a mask opening and their back is a bond face. Tell them apart by the patch: clipped corners on the cut corner, plain square on the dual feed.
+- **These files are now in KiCad 10 format.** KiCad 8 and 9 cannot open them.
 - **The simulation has a 0.5 mm feed pin and no SMA, solder mask or adhesive.** On the thin board the SMA moved the result by −2.5 to −4 MHz and solder mask by −6 to −8 MHz (`sim/HFSS_RESULTS.md`). Neither check has been repeated at this thickness. The cut corner's axial-ratio window has about ±6 MHz to spare, so those shifts matter for it.
 
 ## Regenerating
 
 ```
-"C:\Program Files\KiCad\8.0\bin\python.exe" kicad/prototype_thick.py
+"C:\Program Files\KiCad\10.0\bin\python.exe" kicad/prototype_thick.py --gerbers
 ```
+
+On macOS use `/Applications/KiCad/KiCad.app/Contents/Frameworks/Python.framework/Versions/Current/bin/python3`. Without `--gerbers` only the boards and pictures are rebuilt.
 
 Dimensions are read from [`sim/thick_design.json`](../../sim/thick_design.json).

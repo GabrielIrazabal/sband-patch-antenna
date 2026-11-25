@@ -101,6 +101,19 @@ BOARDS = {
         cut=3.50,
         back_note="TUNED FOR A 100 MM METAL FACE",
     ),
+    # Dual feed re-tuned in HFSS for the 100 mm metal face (sim/HFSS_RESULTS.md). The whole top side is
+    # left free of solder mask: HFSS showed mask around the patch pulls this board's match 8 MHz low.
+    "A_dualfeed_PTFE_face100": dict(
+        title="A-PTFE-F: DUAL-FEED (HYBRID)",
+        material="ZYF255DA PTFE 1.52MM",
+        patch=37.28,
+        feed=5.80,
+        ports=("x", "y"),
+        cut_corners=(),
+        cut=0.0,
+        back_note="RHCP: J2 LAGS J1 BY 90 DEG. TUNED FOR A 100 MM METAL FACE",
+        bare_top=True,
+    ),
 }
 
 ORIGIN = (100.0, 100.0)    # board top-left in the KiCad sheet
@@ -208,6 +221,19 @@ def add_patch(board, net, side, cut, cut_corners):
         if layer == pcbnew.F_Cu:
             shp.SetNet(net)
         board.Add(shp)
+
+
+def add_bare_top(board):
+    """Solder-mask opening over the whole front, so nothing but air sits on the patch side."""
+    x0, y0 = ORIGIN
+    s = COMMON["board"]
+    shp = pcbnew.PCB_SHAPE(board)
+    shp.SetShape(pcbnew.SHAPE_T_POLY)
+    shp.SetPolyPoints([v(x0, y0), v(x0 + s, y0), v(x0 + s, y0 + s), v(x0, y0 + s)])
+    shp.SetFilled(True)
+    shp.SetWidth(0)
+    shp.SetLayer(pcbnew.F_Mask)
+    board.Add(shp)
 
 
 def load_fp(lib, name):
@@ -329,12 +355,19 @@ def build(name, spec):
 
     x0, y0 = ORIGIN
     s = COMMON["board"]
-    add_text(board, f"SSI S-BAND PATCH REV1  {spec['title']}", (cx, y0 + 7.5), pcbnew.F_SilkS)
+    bare = spec.get("bare_top", False)
     dims = f"L={spec['patch']:.2f} FEED={spec['feed']:.2f}"
     if spec["cut_corners"]:
         dims += f" CUT={spec['cut']:.2f}"
-    add_text(board, dims, (cx, y0 + s - 7.5), pcbnew.F_SilkS, 1.0)
-    add_text(board, f"{spec.get('material', 'RO4350B 1.52MM')}  ENIG  NO MASK ON PATCH", (cx, y0 + s - 7.5),
+    if bare:
+        add_bare_top(board)
+        add_text(board, f"SSI S-BAND PATCH REV1  {spec['title']}", (cx, y0 + 7.5), pcbnew.B_SilkS, 1.2, True)
+        add_text(board, dims, (cx, y0 + 10.5), pcbnew.B_SilkS, 1.0, True)
+    else:
+        add_text(board, f"SSI S-BAND PATCH REV1  {spec['title']}", (cx, y0 + 7.5), pcbnew.F_SilkS)
+        add_text(board, dims, (cx, y0 + s - 7.5), pcbnew.F_SilkS, 1.0)
+    mask_note = "NO MASK ON TOP SIDE" if bare else "NO MASK ON PATCH"
+    add_text(board, f"{spec.get('material', 'RO4350B 1.52MM')}  ENIG  {mask_note}", (cx, y0 + s - 7.5),
              pcbnew.B_SilkS, 1.0, True)
     if spec.get("back_note"):
         add_text(board, spec["back_note"], (cx, y0 + s - 11), pcbnew.B_SilkS, 1.0, True)

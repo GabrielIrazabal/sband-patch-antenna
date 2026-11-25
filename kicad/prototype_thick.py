@@ -12,8 +12,9 @@ Neither bond face has copper, so the boards sit flat on each other.
 Dimensions come from sim/thick_design.json (HFSS, 60 mm board on a 100 mm metal face).
 This does not touch the rev-1 boards, ../fab or generate_boards.py; it only reuses helpers from it.
 
-Run with KiCad's bundled Python (written against KiCad 8.0):
-  "C:\\Program Files\\KiCad\\8.0\\bin\\python.exe" prototype_thick.py
+Run with KiCad's bundled Python (KiCad 8 or later; last run with KiCad 10):
+  "C:\\Program Files\\KiCad\\8.0\\bin\\python.exe" prototype_thick.py [--gerbers]
+  macOS: /Applications/KiCad/KiCad.app/Contents/Frameworks/Python.framework/Versions/Current/bin/python3 prototype_thick.py [--gerbers]
 Output: prototype_thick/<name>_TOP/..., prototype_thick/<name>_BOTTOM/... and an SVG of each copper side.
 """
 import json
@@ -92,7 +93,10 @@ def ground(board, gnd_net):
     for hx, hy in [(x0 + i, y0 + i), (x0 + s - i, y0 + i), (x0 + s - i, y0 + s - i), (x0 + i, y0 + s - i)]:
         k = pcbnew.ZONE(board)                 # keep-out so the pour stays clear of the unplated hole
         k.SetIsRuleArea(True)
-        k.SetDoNotAllowCopperPour(True)
+        if hasattr(k, "SetDoNotAllowZoneFills"):
+            k.SetDoNotAllowZoneFills(True)          # KiCad 9 and later
+        else:
+            k.SetDoNotAllowCopperPour(True)         # KiCad 8
         k.SetDoNotAllowTracks(False)
         k.SetDoNotAllowVias(False)
         k.SetDoNotAllowPads(False)
@@ -128,16 +132,10 @@ def build_top(name, spec):
     cx, cy = g.centre()
     for n, axis in enumerate(spec["ports"], 1):
         pin_pad(board, f"P{n}", feed_xy(spec, axis), pcbnew.F_Cu, sig)
-    x0, y0 = g.ORIGIN
-    s = g.COMMON["board"]
-    g.add_text(board, f"SSI S-BAND PROTO 3MM  {spec['title']}  TOP", (cx, y0 + 5.5), pcbnew.F_SilkS, 1.0)
-    dims = f"L={spec['patch']:.2f} FEED={spec['feed']:.2f}"
-    if spec.get("feed_y"):
-        dims += f"/{spec['feed_y']:.2f}"
-    if spec["cut_corners"]:
-        dims += f" CUT={spec['cut']:.2f}"
-    g.add_text(board, dims, (cx, y0 + s - 7.5), pcbnew.F_SilkS, 1.0)
-    g.add_text(board, "NO COPPER ON BACK. BOND TO BOTTOM BOARD, NO AIR GAP", (cx, y0 + s - 5.0), pcbnew.F_SilkS, 0.8)
+    # No solder mask anywhere on the front (mask around the patch shifted the thin boards 6 to 8 MHz in HFSS)
+    # and no silkscreen: ink cannot sit in a mask opening, and the back of this board is the bond face.
+    # The matching BOTTOM board carries the labels.
+    g.add_bare_top(board)
     board.BuildConnectivity()
     pcbnew.SaveBoard(path, board)
     return path
@@ -167,6 +165,12 @@ def build_bottom(name, spec):
     x0, y0 = g.ORIGIN
     s = g.COMMON["board"]
     g.add_text(board, f"PROTO 3MM  {spec['title']}  BOTTOM", (cx, y0 + 9.5), pcbnew.B_SilkS, 1.0, True)
+    dims = f"TOP BOARD: L={spec['patch']:.2f} FEED={spec['feed']:.2f}"
+    if spec.get("feed_y"):
+        dims += f"/{spec['feed_y']:.2f}"
+    if spec["cut_corners"]:
+        dims += f" CUT={spec['cut']:.2f}"
+    g.add_text(board, dims, (cx, y0 + 12.0), pcbnew.B_SilkS, 0.9, True)
     g.add_text(board, "ZYF255DA PTFE 1.52MM  ENIG  NO COPPER ON FRONT", (cx, y0 + s - 7.5), pcbnew.B_SilkS, 1.0, True)
     if spec.get("back_note"):
         g.add_text(board, spec["back_note"], (cx, y0 + s - 10.5), pcbnew.B_SilkS, 1.0, True)
@@ -201,16 +205,37 @@ def export_svg(cli, path, copper, overlay, mirror):
 def check(cli, path, copper, overlay, mirror=False):
     out_dir = os.path.dirname(path)
     report = os.path.join(out_dir, "drc.json")
-    subprocess.run([cli, "pcb", "drc", "--severity-all", "--format", "json", "-o", report, path], capture_output=True)
+    # Refill through kicad-cli so the ground pour obeys the board-edge clearance, as generate_boards.py does.
+    subprocess.run([cli, "pcb", "drc", "--severity-all", "--refill-zones", "--save-board",
+                    "--format", "json", "-o", report, path], capture_output=True)
     d = json.load(open(report))
     os.remove(report)
-    viol = [x["type"] for x in d["violations"]]
+    # The feed hole sits under the SMA centre pad on purpose (the wire is soldered there), so KiCad's
+    # "plated hole inside a courtyard" check is expected on the BOTTOM boards and is not counted.
+    viol = [x["type"] for x in d["violations"] if x["type"] != "pth_inside_courtyard"]
     unc = len(d["unconnected_items"])
     svg = export_svg(cli, path, copper, overlay, mirror)
     return ("DRC clean" if not viol and not unc else f"DRC: {sorted(set(viol))}, {unc} unconnected") +            ("; svg" if svg else "; no svg")
 
 
+def export_gerbers(cli, path):
+    """JLC-ready Gerber and drill zip in ../fab/, the same layer set as the rev-1 boards."""
+    import shutil
+    name = os.path.splitext(os.path.basename(path))[0]
+    fab = os.path.join(g.REPO, "fab", name)
+    shutil.rmtree(fab, ignore_errors=True)
+    os.makedirs(fab)
+    layers = "F.Cu,B.Cu,F.Mask,B.Mask,F.SilkS,B.SilkS,F.Paste,B.Paste,Edge.Cuts"
+    subprocess.run([cli, "pcb", "export", "gerbers", "--layers", layers, "-o", fab + os.sep, path], capture_output=True)
+    subprocess.run([cli, "pcb", "export", "drill", "--format", "excellon", "--excellon-separate-th",
+                    "-o", fab + os.sep, path], capture_output=True)
+    shutil.make_archive(fab, "zip", fab)
+    return f"; gerbers -> fab/{name}.zip"
+
+
 def main():
+    import sys
+    gerbers = "--gerbers" in sys.argv
     designs = json.load(open(DESIGN))
     cli = g.kicad_cli()
     os.makedirs(OUT, exist_ok=True)
@@ -220,8 +245,11 @@ def main():
                     back_note=d.get("back_note"), feed_y=d.get("feed_y", 0.0))
         top = build_top(name, spec)
         bot = build_bottom(name, spec)
-        print(name + "_TOP:", check(cli, top, "F.Cu", "F.SilkS") if cli else "saved")
-        print(name + "_BOTTOM:", check(cli, bot, "B.Cu", "B.SilkS,B.Paste", mirror=True) if cli else "saved")
+        for label, path, args in (("_TOP", top, ("F.Cu", "F.SilkS")), ("_BOTTOM", bot, ("B.Cu", "B.SilkS,B.Paste", True))):
+            msg = check(cli, path, *args) if cli else "saved"
+            if cli and gerbers:
+                msg += export_gerbers(cli, path)
+            print(name + label + ":", msg)
 
 
 if __name__ == "__main__":

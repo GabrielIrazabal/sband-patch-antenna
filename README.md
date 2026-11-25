@@ -14,10 +14,27 @@ Research doc: PJ-10004, S-band patch antenna research (internal to SSI) · Autho
 | --- | --- |
 | Requirements and design decisions | Done |
 | Simulation (openEMS) | Done for five boards: two designs × two materials, plus a cut-corner PTFE board tuned for the satellite face |
-| KiCad boards, size variants, Gerbers | Done: 15 boards, all DRC clean, zips in [`fab/`](fab) |
+| KiCad boards, size variants, Gerbers | Done for all four antenna options below, zips in [`fab/`](fab). The 3 mm boards still have open questions for JLC |
 | **Decision needed: board material** | RO4350B does not reach the 6.5 dBic gain requirement; JLC's PTFE does once mounted on the satellite. See [Gain](#gain-the-one-requirement-not-met-on-ro4350b) |
 | Cross-check in HFSS | Done. HFSS agrees within 0.4 % in frequency and 0.3 dB in gain. See [`sim/HFSS_RESULTS.md`](sim/HFSS_RESULTS.md) |
 | JLC order, VNA test | Not done |
+
+## The four antenna options and their files
+
+All four are on JLC's PTFE (ZYF255DA), 60 × 60 mm, tuned in HFSS for 2.425 GHz on a 100 mm metal face. Numbers are HFSS, across the 20 MHz channel; nothing has been built. Plots: [`docs/results_60mm/`](docs/results_60mm/README.md).
+
+| Antenna | Patch / feed / cut (mm) | RHCP gain | Worst axial ratio | KiCad | Gerbers |
+| --- | --- | --- | --- | --- | --- |
+| Cut corner, 1.5 mm | 37.52 / 7.00 / 3.50 | 7.08–7.24 dBic | 4.14 dB | [`kicad/Cutcorner_antenna`](kicad/Cutcorner_antenna) (drawn by hand) | `fab/Cutcorner_antenna.zip` |
+| Dual feed, 1.5 mm | 37.28 / 5.80 / none | 6.75–6.96 dBic | 0.79 dB | [`kicad/A_dualfeed_PTFE_face100`](kicad/A_dualfeed_PTFE_face100) | `fab/A_dualfeed_PTFE_face100.zip`, plus `_L36p98` and `_L37p58` |
+| Cut corner, 3 mm | 37.10 / 8.00 and 2.18 sideways / 5.55 | 7.61–7.67 dBic | 2.17 dB | [`kicad/prototype_thick`](kicad/prototype_thick): `B_cutcorner_RHCP_PTFE_3mm_TOP` and `_BOTTOM` | `fab/B_cutcorner_RHCP_PTFE_3mm_TOP.zip` and `_BOTTOM.zip` |
+| Dual feed, 3 mm | 36.39 / 6.70 / none | 7.26–7.32 dBic | 0.94 dB | [`kicad/prototype_thick`](kicad/prototype_thick): `A_dualfeed_PTFE_3mm_TOP` and `_BOTTOM` | `fab/A_dualfeed_PTFE_3mm_TOP.zip` and `_BOTTOM.zip` |
+
+- Dual-feed figures assume a typical 90° coupler (0.5 dB and 3° off, 0.4 dB loss). The coupler is an external part.
+- **The 1.5 mm cut corner here is the hand-drawn board.** It has the same dimensions as the generated `B_cutcorner_RHCP_PTFE_face100`, with the whole top side free of solder mask. The generated board and its ±0.3 mm variants are still in `kicad/` and `fab/`.
+- **The 3 mm antennas are each two boards** glued face to face: a TOP board with only the patch and a BOTTOM board with only the ground and connector. Read the open points in [`kicad/prototype_thick/README.md`](kicad/prototype_thick/README.md) before ordering them.
+- **These sizes are for PTFE only.** On RO4350B the same patch would resonate near 2.04 GHz. The RO4350B boards are the ones in the table under [The boards](#the-boards).
+- Every board except the generated rev-1 ones has its whole top side free of solder mask, because HFSS showed mask around the patch shifts the tuning by 6 to 8 MHz.
 
 ## Requirements and how the designs compare
 
@@ -205,7 +222,9 @@ Upload each zip from [`fab/`](fab), then set:
 - **Copper:** 1 oz
 - **Via-in-pad:** ask for the probe via under the SMA centre pad to be filled and capped. Otherwise hand-solder carefully so solder doesn't wick down the via.
 
-Each design has three zips: nominal, −0.3 mm and +0.3 mm. Order about 5 of each version you want to test.
+Each rev-1 design has three zips: nominal, −0.3 mm and +0.3 mm. Order about 5 of each version you want to test.
+
+For the 3 mm antennas, order the TOP and BOTTOM zips as two separate boards with the same settings, and read [`kicad/prototype_thick/README.md`](kicad/prototype_thick/README.md) first.
 
 ### Test (on a VNA)
 
