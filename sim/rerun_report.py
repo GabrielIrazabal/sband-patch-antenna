@@ -73,6 +73,8 @@ def find(key, tag):
     _, pre, thick, _, _ = ANT[key]
     hits = [d for d in glob.glob(os.path.join(RES, f"{pre}*_{tag}_mesh*")) if os.path.isfile(os.path.join(d, "summary.json"))]
     if tag == "joint":
+        if key.endswith("15"):      # the joint only exists in the two-board (3 mm) antennas
+            return None
         thick = "_h3.14_"
     hits = [d for d in hits if thick in os.path.basename(d)]
     return os.path.basename(hits[0]) if hits else None
