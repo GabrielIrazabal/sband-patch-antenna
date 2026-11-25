@@ -44,6 +44,7 @@ The last three columns compare each run with the rerun of the same antenna at no
 | Cut corner, 3 mm | With the SMA (coax and wave port) | 2.3970 GHz | 21.0 dB | 129 MHz | 7.60 to 7.66 dBic | 2.03 dB | 73 deg | RHCP | 44479 | +3.0 MHz | -0.01 dB | pass |
 | Cut corner, 3 mm | With solder mask on the top | 2.3855 GHz | 18.5 dB | 132 MHz | 7.58 to 7.67 dBic | 3.05 dB | 72 deg | RHCP | 45926 | -8.5 MHz | -0.03 dB | pass |
 | Cut corner, 3 mm | 0.09 mm of Dk 3.5 in the glue joint | 2.3815 GHz | 19.4 dB | 133 MHz | 7.49 to 7.67 dBic | 4.10 dB | 73 deg | RHCP | 43858 | -12.5 MHz | -0.12 dB | pass |
+| Cut corner, 3 mm | SMA, top mask and glue-joint layer together (extra run) | 2.3735 GHz | 18.7 dB | 133 MHz | 7.29 to 7.62 dBic | 5.51 dB | 72 deg | RHCP | 41145 | -20.5 MHz | -0.32 dB | pass |
 | Cut corner, 3 mm | -40 C (Dk 2.5676, sizes x 0.99907) | 2.3880 GHz | 19.1 dB | 131 MHz | 7.61 to 7.69 dBic | 2.82 dB | 72 deg | RHCP | 41852 | -6.0 MHz | +0.00 dB | pass |
 | Cut corner, 3 mm | +85 C (Dk 2.5309, sizes x 1.00101) | 2.4005 GHz | 19.5 dB | 131 MHz | 7.58 to 7.72 dBic | 3.23 dB | 72 deg | RHCP | 46113 | +6.5 MHz | -0.03 dB | pass |
 | Dual feed, 3 mm | Rerun, nominal | 2.4225 GHz | 16.4 dB | 61 MHz | 7.26 to 7.32 dBic | 0.28 dB | 73 deg | RHCP | 49873 | | | pass |
@@ -51,6 +52,7 @@ The last three columns compare each run with the rerun of the same antenna at no
 | Dual feed, 3 mm | With the SMA (coax and wave port) | 2.4180 GHz | 13.7 dB | 61 MHz | 7.17 to 7.25 dBic | 0.31 dB | 72 deg | RHCP | 42235 | -4.5 MHz | -0.09 dB | pass |
 | Dual feed, 3 mm | With solder mask on the top | 2.4135 GHz | 12.8 dB | 62 MHz | 7.16 to 7.32 dBic | 0.26 dB | 72 deg | RHCP | 40024 | -9.0 MHz | -0.10 dB | pass |
 | Dual feed, 3 mm | 0.09 mm of Dk 3.5 in the glue joint | 2.4105 GHz | 11.9 dB | 62 MHz | 7.12 to 7.32 dBic | 0.34 dB | 72 deg | RHCP | 47470 | -12.0 MHz | -0.14 dB | pass |
+| Dual feed, 3 mm | SMA, top mask and glue-joint layer together (extra run) | 2.3985 GHz | 9.0 dB | 62 MHz | 6.83 to 7.19 dBic | 0.31 dB | 72 deg | RHCP | 41972 | -24.0 MHz | -0.43 dB | FAIL |
 | Dual feed, 3 mm | -40 C (Dk 2.5676, sizes x 0.99907) | 2.4170 GHz | 13.9 dB | 61 MHz | 7.18 to 7.30 dBic | 0.32 dB | 73 deg | RHCP | 49081 | -5.5 MHz | -0.08 dB | pass |
 | Dual feed, 3 mm | +85 C (Dk 2.5309, sizes x 1.00101) | 2.4285 GHz | 15.8 dB | 62 MHz | 7.21 to 7.34 dBic | 0.31 dB | 72 deg | RHCP | 44390 | +6.0 MHz | -0.05 dB | pass |
 

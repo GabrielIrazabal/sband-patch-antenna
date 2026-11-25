@@ -38,6 +38,7 @@ CASES = [
     ("sma", "With the SMA (coax and wave port)"),
     ("mask", "With solder mask on the top"),
     ("joint", "0.09 mm of Dk 3.5 in the glue joint"),
+    ("allthree", "SMA, top mask and glue-joint layer together (extra run)"),
     ("m40C", "-40 C (Dk 2.5676, sizes x 0.99907)"),
     ("p85C", "+85 C (Dk 2.5309, sizes x 1.00101)"),
 ]
@@ -72,7 +73,7 @@ def match(freqs, s):
 def find(key, tag):
     _, pre, thick, _, _ = ANT[key]
     hits = [d for d in glob.glob(os.path.join(RES, f"{pre}*_{tag}_mesh*")) if os.path.isfile(os.path.join(d, "summary.json"))]
-    if tag == "joint":
+    if tag in ("joint", "allthree"):
         if key.endswith("15"):      # the joint only exists in the two-board (3 mm) antennas
             return None
         thick = "_h3.14_"
@@ -146,7 +147,7 @@ def main():
         for tag, what in CASES:
             run = find(k, tag)
             if not run:
-                if not (tag in ("fine", "pad62fine") and k != "A15") and not (tag in ("sma", "mask", "joint") and k.endswith("15")):
+                if not (tag in ("fine", "pad62fine") and k != "A15") and not (tag in ("sma", "mask", "joint", "allthree") and k.endswith("15")):
                     missing.append(f"{label}: {what}")
                 continue
             r = load(run, k.startswith("A"))
