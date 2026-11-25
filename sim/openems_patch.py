@@ -40,6 +40,7 @@ DEFAULTS = dict(
     bw=20e6,       # Hz, signal bandwidth
     L=32.12,       # mm, patch side
     feed=3.46,     # mm, probe offset from centre
+    feed_y=0.0,    # mm, sideways probe offset (+y); used by the 3 mm cut corner to cancel pin inductance
     cut=2.60,      # mm, corner-cut leg (board B)
     h=1.524,       # mm, RO4350B core
     G=60.0,        # mm, board / ground side
@@ -76,6 +77,8 @@ def design_name(a):
     n = f"{a.board}_L{a.L:.2f}_f{a.feed:.2f}"
     if a.board == "B":
         n += f"_c{a.cut:.2f}"
+    if abs(a.feed_y) > 1e-9:
+        n += f"_fy{a.feed_y:.2f}"
     if a.W is not None:
         n += f"_W{a.W:.2f}"
     n += f"_er{a.er:.2f}_h{a.h:.2f}"
@@ -105,7 +108,7 @@ def fill(points, res):
 
 
 def feeds_of(a):
-    f = [(a.feed, 0.0)]
+    f = [(a.feed, a.feed_y if a.board != "A" else 0.0)]
     if a.board == "A":
         f.append((0.0, a.feed))
     return f
@@ -133,6 +136,8 @@ def build(a, excite_port, sim_path):
     for d, half in (("x", s), ("y", w)):
         e_in, e_out = half - res / 3, half + 2 * res / 3
         fixed = [-e_out, -e_in, -a.feed, 0.0, a.feed, e_in, e_out]
+        if abs(a.feed_y) > 1e-9:
+            fixed += [-a.feed_y, a.feed_y]
         if a.board == "B":
             fixed += [-(half - a.cut), half - a.cut]
         mesh.AddLine(d, fill(fixed, res))

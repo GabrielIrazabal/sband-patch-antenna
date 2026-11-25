@@ -17,6 +17,7 @@ Research doc: PJ-10004, S-band patch antenna research (internal to SSI) · Autho
 | KiCad boards, size variants, Gerbers | Done for all four antenna options below, zips in [`fab/`](fab). The 3 mm boards still have open questions for JLC |
 | **Decision needed: board material** | RO4350B does not reach the 6.5 dBic gain requirement; JLC's PTFE does once mounted on the satellite. See [Gain](#gain-the-one-requirement-not-met-on-ro4350b) |
 | Cross-check in HFSS | Done. HFSS agrees within 0.4 % in frequency and 0.3 dB in gain. See [`sim/HFSS_RESULTS.md`](sim/HFSS_RESULTS.md) |
+| Rerun check, 24 November | All four re-simulated in openEMS: three pass in both solvers, the 1.5 mm dual feed is borderline. See [`sim/RERUN_CHECK.md`](sim/RERUN_CHECK.md). HFSS rerun on the laptop: [`HFSS_RERUN.md`](HFSS_RERUN.md) |
 | JLC order, VNA test | Not done |
 
 ## The four antenna options and their files

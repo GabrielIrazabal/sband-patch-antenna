@@ -34,6 +34,8 @@ export PATH="$HOME/opt/openEMS/bin:$PATH"
 python3 summarize.py "B_*"        # one line per result folder
 ```
 
+`--feed_y` moves the feed sideways off the centre line (used by the 3 mm cut corner).
+
 Each run takes 5–10 minutes on an M-series Mac and writes `results_openems/<design>/`:
 - `summary.json`: the numbers
 - `results.png`: match, axial ratio and gain vs frequency, pattern cuts
