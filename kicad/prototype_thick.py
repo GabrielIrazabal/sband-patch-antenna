@@ -66,6 +66,12 @@ def pin_pad(board, ref, xy, layer, net):
     ls.AddLayer(layer)
     ls.AddLayer(pcbnew.F_Mask if layer == pcbnew.F_Cu else pcbnew.B_Mask)
     pad.SetLayerSet(ls)
+    if hasattr(pad, "SetRemoveUnconnected"):
+        # KiCad 9 and later put a plated-hole pad on every copper layer whatever the layer set says, which
+        # would leave a 35 um copper ring on the bond face and hold the two boards apart. Drop the pad's
+        # copper on any layer where nothing connects to it, the bond face included.
+        pad.SetRemoveUnconnected(True)
+        pad.SetKeepTopBottom(False)
     pad.SetPosition(g.v(*xy))
     pad.SetNet(net)
     fp.Add(pad)
