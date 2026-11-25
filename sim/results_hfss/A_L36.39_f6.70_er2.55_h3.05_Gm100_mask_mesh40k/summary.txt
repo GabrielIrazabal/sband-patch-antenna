@@ -1,0 +1,17 @@
+design: A_L36.39_f6.70_er2.55_h3.05_Gm100_mask_mesh40k
+S11 minimum: -21.6 dB at 2.4155 GHz
+worst S11 in 2.415-2.435 GHz: -13.5 dB (need <= -10.0)
+-10 dB bandwidth: 63.0 MHz
+axial ratio minimum: 0.15 dB at 2.3900 GHz; 3 dB bandwidth None MHz
+worst axial ratio in band: 0.26 dB (need <= 3.0)
+RHCP realized gain in band: 7.57 to 7.72 dBic (need >= 6.5)
+total realized gain at f0: 7.69 dBi; directivity 8.0 dBi; radiation efficiency 95 %
+RHCP minus LHCP at f0: 37.5 dB -> RHCP
+HPBW phi=0: 73 deg, phi=90: 72 deg (need >= 60.0)
+port isolation S21 at f0: -34.9 dB
+mesh: 40024 tetrahedra after 10 passes, delta S 0.0077697
+input impedance at f0: 41.9 -8.7 j ohm; at the S11 minimum: 51.8 -8.3 j ohm
+hybrid off by 0.5 dB and 3.0 deg (worst sign): axial ratio 0.93 dB, RHCP gain at least 7.56 dBic in band (before the hybrid's own loss)
+hybrid off by 1.0 dB and 5.0 deg (worst sign): axial ratio 1.52 dB, RHCP gain at least 7.54 dBic in band (before the hybrid's own loss)
+hybrid off by 1.0 dB and 10.0 deg (worst sign): axial ratio 2.06 dB, RHCP gain at least 7.51 dBic in band (before the hybrid's own loss)
+solve time: 8.6 min
